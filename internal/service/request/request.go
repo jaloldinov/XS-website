@@ -26,6 +26,7 @@ func BindFunc(c *gin.Context, data interface{}, requiredFields ...string) *pkg.E
 	}
 
 	err := validateStruct(data, requiredFields...)
+
 	return err
 }
 
@@ -51,8 +52,9 @@ func validateStruct(s interface{}, requiredFields ...string) *pkg.Error {
 
 		isSet := field.IsValid() && !field.IsZero()
 		if !isSet {
-			//log.Print(isSet, fieldName, reflect.ValueOf(field))
+			// log.Print(isSet, fieldName, reflect.ValueOf(field))
 			for _, f := range requiredFields {
+
 				if f == fieldName {
 					errFields = append(errFields, pkg.FieldError{
 						Err:   errors.New("field is required!"),

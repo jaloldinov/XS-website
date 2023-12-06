@@ -27,9 +27,9 @@ func (r Repository) UserCreate(ctx context.Context, request CreateUserRequest) (
 
 	detail.Id = uuid.NewString()
 	detail.Avatar = request.AvatarLink
-	detail.Username = request.Username
+	detail.Username = *request.Username
 	detail.FullName = request.FullName
-	detail.Role = request.Role
+	detail.Role = *request.Role
 	detail.BirthDate = request.BirthDate
 	detail.Gender = request.Gender
 	detail.Phone = request.Phone
@@ -121,36 +121,36 @@ func (r Repository) UserUpdate(ctx context.Context, request UpdateUserRequest) *
 		}
 	}
 
-	if request.Username != "" {
-		detail.Username = request.Username
+	if request.Username != nil {
+		detail.Username = *request.Username
 	}
-	if request.AvatarLink != "" {
-		detail.Avatar = request.AvatarLink
+	if request.AvatarLink != nil {
+		detail.Avatar = *request.AvatarLink
 	}
-	if request.FullName != "" {
-		detail.FullName = request.FullName
+	if request.FullName != nil {
+		detail.FullName = *request.FullName
 	}
-	if request.Gender != "" {
-		detail.Gender = request.Gender
+	if request.Gender != nil {
+		detail.Gender = *request.Gender
 	}
 
-	// if statusStr != "" {
-	detail.Status = request.Status
-	// }
+	if request.Status != nil {
+		detail.Status = *request.Status
+	}
 
-	if request.Role != "" {
-		detail.Role = request.Role
+	if request.Role != nil {
+		detail.Role = *request.Role
 	}
-	if request.BirthDate != "" {
-		detail.BirthDate = request.BirthDate
+	if request.BirthDate != nil {
+		detail.BirthDate = *request.BirthDate
 	}
-	if request.Phone != "" {
-		detail.Phone = request.Phone
+	if request.Phone != nil {
+		detail.Phone = *request.Phone
 	}
 
 	date := time.Now()
 	detail.UpdatedAt = &date
-	detail.UpdatedBy = &request.UpdatedBy
+	detail.UpdatedBy = request.UpdatedBy
 
 	_, err = r.NewUpdate().Model(&detail).Where("id = ?", detail.Id).Exec(ctx)
 

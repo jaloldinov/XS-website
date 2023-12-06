@@ -32,6 +32,27 @@ func (uc Controller) CreateUser(c *gin.Context) {
 		return
 	}
 
+	if data.Username == nil || *data.Username == "" {
+		response.RespondError(c, &pkg.Error{
+			Err: fmt.Errorf("username required!"),
+		})
+		return
+	}
+
+	if data.Password == nil || *data.Password == "" {
+		response.RespondError(c, &pkg.Error{
+			Err: fmt.Errorf("password required!"),
+		})
+		return
+	}
+
+	if data.Role == nil || *data.Role == "" {
+		response.RespondError(c, &pkg.Error{
+			Err: fmt.Errorf("role required!"),
+		})
+		return
+	}
+
 	createdBy, _ := c.Keys["user_id"].(string)
 	data.CreatedBy = &createdBy
 
@@ -118,14 +139,14 @@ func (uc Controller) UpdateUser(c *gin.Context) {
 
 	data.Id = c.Param("id")
 	createdBy, _ := c.Keys["user_id"].(string)
-	data.UpdatedBy = createdBy
+	data.UpdatedBy = &createdBy
 
 	avatarLink, err := file.NewService().Upload(c, data.Avatar, "avatar")
 	if err != nil {
 		fmt.Errorf("avatar file uploading error: %v", err)
 		return
 	}
-	data.AvatarLink = avatarLink
+	data.AvatarLink = &avatarLink
 
 	er := uc.user.UserUpdate(c, data)
 	if er != nil {
@@ -160,7 +181,7 @@ func (uc Controller) ResetUserPassword(c *gin.Context) {
 	}
 
 	updatedBy, _ := c.Keys["user_id"].(string)
-	data.UpdatedBy = updatedBy
+	data.UpdatedBy = &updatedBy
 
 	er := uc.user.UserUpdatePassword(c, data)
 	if er != nil {

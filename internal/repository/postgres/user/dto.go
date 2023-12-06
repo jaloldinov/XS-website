@@ -16,10 +16,10 @@ type Filter struct {
 type CreateUserRequest struct {
 	Avatar     *multipart.FileHeader `json:"-" form:"avatar"`
 	AvatarLink string                `json:"-" form:"-"`
-	Username   string                `json:"username" form:"username"`
+	Username   *string               `json:"username" form:"username"`
 	Password   *string               `json:"password" form:"password"`
 	FullName   string                `json:"full_name" form:"full_name"`
-	Role       string                `json:"role" form:"role"`
+	Role       *string               `json:"role" form:"role"`
 	BirthDate  string                `json:"birth_date" form:"birth_date"`
 	Gender     string                `json:"gender" form:"gender"`
 	Phone      string                `json:"phone" form:"phone"`
@@ -72,15 +72,15 @@ type GetUserListResponse struct {
 type UpdateUserRequest struct {
 	Id         string                `json:"id" bun:"id"`
 	Avatar     *multipart.FileHeader `json:"-" form:"avatar"`
-	AvatarLink string                `json:"-" form:"-"`
-	Username   string                `json:"username" form:"username"`
-	FullName   string                `json:"full_name" form:"full_name"`
-	Status     bool                  `json:"status" form:"status"`
-	Role       string                `json:"role" form:"role"`
-	BirthDate  string                `json:"birth_date" form:"birth_date"`
-	Gender     string                `json:"gender" form:"gender"`
-	Phone      string                `json:"phone" form:"phone"`
-	UpdatedBy  string                `json:"-"`
+	AvatarLink *string               `json:"-" form:"-"`
+	Username   *string               `json:"username" form:"username"`
+	FullName   *string               `json:"full_name" form:"full_name"`
+	Status     *bool                 `json:"status" form:"status"`
+	Role       *string               `json:"role" form:"role"`
+	BirthDate  *string               `json:"birth_date" form:"birth_date"`
+	Gender     *string               `json:"gender" form:"gender"`
+	Phone      *string               `json:"phone" form:"phone"`
+	UpdatedBy  *string               `json:"-"`
 }
 
 type DeleteUserRequest struct {
@@ -89,9 +89,9 @@ type DeleteUserRequest struct {
 }
 
 type UpdatePasswordRequest struct {
-	Id          string  `json:"id" form:"id"`
+	Id          *string `json:"id" form:"id"`
 	NewPassword *string `json:"new_password" form:"new_password"`
-	UpdatedBy   string  `json:"-"`
+	UpdatedBy   *string `json:"-"`
 }
 
 type DetailUserResponse struct {

@@ -1,6 +1,12 @@
 package router
 
 import (
+	"xs/internal/auth"
+	auth_controller "xs/internal/controller/http/v1/auth"
+	user_controller "xs/internal/controller/http/v1/user"
+	"xs/internal/pkg/repository/postgres"
+	user_repo "xs/internal/repository/postgres/user"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,33 +28,39 @@ type AuthController interface {
 }
 
 type Router struct {
-	auth           Auth
-	authController AuthController
-	user           User
+	postgresDB *postgres.Database
+	auth       *auth.Auth
 }
 
-func New(auth Auth, user User, authController AuthController) *Router {
+func New(auth *auth.Auth, postgresDB *postgres.Database) *Router {
 	return &Router{
-		auth:           auth,
-		user:           user,
-		authController: authController,
+		auth:       auth,
+		postgresDB: postgresDB,
 	}
 }
 
 func (r *Router) Init(port string) error {
 	router := gin.Default()
 
+	//repository
+	userRepo := user_repo.NewRepository(r.postgresDB)
+
+	// mediaRepo := media_repo.NewRepository(postgresDB, fileService)
+
+	//controller
+	userController := user_controller.NewController(userRepo)
+	authController := auth_controller.NewController(userRepo, r.auth)
+
 	// #AUTH
-	router.POST("/api/v1/admin/sign-in", r.authController.SignIn)
+	router.POST("/api/v1/admin/sign-in", authController.SignIn)
 
 	// #USER
-	router.POST("api/v1/admin/user/create", r.auth.HasPermission("ADMIN"), r.user.CreateUser)
-	router.GET("/api/v1/admin/user/:id", r.auth.HasPermission("ADMIN"), r.user.GetUserById)
-	router.GET("/api/v1/admin/user/list", r.auth.HasPermission("ADMIN"), r.user.GetUserList)
-	router.PUT("/api/v1/admin/user/:id", r.auth.HasPermission("ADMIN"), r.user.UpdateUser)
-	router.DELETE("/api/v1/admin/user/:id", r.auth.HasPermission("ADMIN"), r.user.DeleteUser)
-
-	router.POST("/api/v1/admin/user/reset/password", r.auth.HasPermission("ADMIN"), r.user.ResetUserPassword)
+	router.POST("api/v1/admin/user/create", r.auth.HasPermission("ADMIN"), userController.CreateUser)
+	router.GET("/api/v1/admin/user/:id", r.auth.HasPermission("ADMIN"), userController.GetUserById)
+	router.GET("/api/v1/admin/user/list", r.auth.HasPermission("ADMIN"), userController.GetUserList)
+	router.PUT("/api/v1/admin/user/:id", r.auth.HasPermission("ADMIN"), userController.UpdateUser)
+	router.DELETE("/api/v1/admin/user/:id", r.auth.HasPermission("ADMIN"), userController.DeleteUser)
+	router.POST("/api/v1/admin/user/reset/password", r.auth.HasPermission("ADMIN"), userController.ResetUserPassword)
 
 	return router.Run(port)
 }
