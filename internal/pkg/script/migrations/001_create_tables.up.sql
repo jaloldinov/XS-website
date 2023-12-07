@@ -26,3 +26,18 @@ CREATE TABLE "users" (
       "deleted_at" timestamp,
       "deleted_by" uuid REFERENCES "users" ("id")
 );
+
+CREATE TABLE "posts" (
+    "id" UUID PRIMARY KEY,
+    "title" JSONB NOT NULL,
+    "content" JSONB NOT NULL,
+    "status" BOOLEAN DEFAULT TRUE,
+    "pub_date" DATE,
+    "author_id" UUID NOT NULL REFERENCES "users"("id"),
+    "created_at" TIMESTAMP DEFAULT now() NOT NULL,
+    "created_by" UUID NOT NULL REFERENCES "users"("id"),
+    "updated_at" TIMESTAMP,
+    "updated_by" UUID REFERENCES "users"("id"),
+    "deleted_at" TIMESTAMP,
+    "deleted_by" UUID REFERENCES "users"("id")
+);
