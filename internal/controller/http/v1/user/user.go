@@ -32,9 +32,6 @@ func (uc Controller) CreateUser(c *gin.Context) {
 		return
 	}
 
-	createdBy, _ := c.Keys["user_id"].(string)
-	data.CreatedBy = &createdBy
-
 	avatarLink, err := file.NewService().Upload(c, data.Avatar, "avatar")
 	if err != nil {
 		fmt.Errorf("avatar file uploading error: %v", err)

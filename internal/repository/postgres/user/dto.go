@@ -23,7 +23,6 @@ type CreateUserRequest struct {
 	BirthDate  string                `json:"birth_date" form:"birth_date"`
 	Gender     string                `json:"gender" form:"gender"`
 	Phone      string                `json:"phone" form:"phone"`
-	CreatedBy  *string               `json:"-"`
 }
 
 type CreateUserResponse struct {
@@ -39,8 +38,8 @@ type CreateUserResponse struct {
 	Gender    string    `json:"gender" bun:"gender"`
 	Phone     string    `json:"phone" bun:"phone"`
 	Status    bool      `json:"status" bun:"status"`
-	CreatedBy *string   `json:"created_by"`
 	CreatedAt time.Time `json:"-" bun:"created_at"`
+	CreatedBy *string   `json:"-"`
 }
 
 type GetUserResponse struct {
