@@ -27,29 +27,8 @@ func NewController(user User) *Controller {
 func (uc Controller) CreateUser(c *gin.Context) {
 	var data user_repo.CreateUserRequest
 
-	if err := request.BindFunc(c, &data, "username", "password", "role"); err != nil {
+	if err := request.BindFunc(c, &data, "Username", "Password", "Role"); err != nil {
 		response.RespondError(c, err)
-		return
-	}
-
-	if data.Username == nil || *data.Username == "" {
-		response.RespondError(c, &pkg.Error{
-			Err: fmt.Errorf("username required!"),
-		})
-		return
-	}
-
-	if data.Password == nil || *data.Password == "" {
-		response.RespondError(c, &pkg.Error{
-			Err: fmt.Errorf("password required!"),
-		})
-		return
-	}
-
-	if data.Role == nil || *data.Role == "" {
-		response.RespondError(c, &pkg.Error{
-			Err: fmt.Errorf("role required!"),
-		})
 		return
 	}
 
@@ -138,8 +117,6 @@ func (uc Controller) UpdateUser(c *gin.Context) {
 	}
 
 	data.Id = c.Param("id")
-	createdBy, _ := c.Keys["user_id"].(string)
-	data.UpdatedBy = &createdBy
 
 	avatarLink, err := file.NewService().Upload(c, data.Avatar, "avatar")
 	if err != nil {
@@ -158,12 +135,10 @@ func (uc Controller) UpdateUser(c *gin.Context) {
 }
 
 func (uc Controller) DeleteUser(c *gin.Context) {
-	var req user.DeleteUserRequest
-	req.Id = c.Param("id")
-	deletedBy, _ := c.Keys["user_id"].(string)
-	req.DeletedBy = deletedBy
 
-	er := uc.user.UserDelete(c, req)
+	Id := c.Param("id")
+
+	er := uc.user.UserDelete(c, Id)
 	if er != nil {
 		response.RespondError(c, er)
 		return
@@ -179,9 +154,6 @@ func (uc Controller) ResetUserPassword(c *gin.Context) {
 		response.RespondError(c, err)
 		return
 	}
-
-	updatedBy, _ := c.Keys["user_id"].(string)
-	data.UpdatedBy = &updatedBy
 
 	er := uc.user.UserUpdatePassword(c, data)
 	if er != nil {

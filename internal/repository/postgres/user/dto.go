@@ -80,18 +80,11 @@ type UpdateUserRequest struct {
 	BirthDate  *string               `json:"birth_date" form:"birth_date"`
 	Gender     *string               `json:"gender" form:"gender"`
 	Phone      *string               `json:"phone" form:"phone"`
-	UpdatedBy  *string               `json:"-"`
-}
-
-type DeleteUserRequest struct {
-	Id        string `json:"id" bun:"id"`
-	DeletedBy string `json:"deleted_by" bun:"deleted_by"`
 }
 
 type UpdatePasswordRequest struct {
 	Id          *string `json:"id" form:"id"`
 	NewPassword *string `json:"new_password" form:"new_password"`
-	UpdatedBy   *string `json:"-"`
 }
 
 type DetailUserResponse struct {

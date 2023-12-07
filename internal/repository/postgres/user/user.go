@@ -24,6 +24,10 @@ func NewRepository(postgresDB *postgres.Database) *Repository {
 
 func (r Repository) UserCreate(ctx context.Context, request CreateUserRequest) (CreateUserResponse, *pkg.Error) {
 	var detail CreateUserResponse
+	dataCtx, er := r.CheckCtx(ctx)
+	if er != nil {
+		return CreateUserResponse{}, er
+	}
 
 	detail.Id = uuid.NewString()
 	detail.Avatar = request.AvatarLink
@@ -33,7 +37,7 @@ func (r Repository) UserCreate(ctx context.Context, request CreateUserRequest) (
 	detail.BirthDate = request.BirthDate
 	detail.Gender = request.Gender
 	detail.Phone = request.Phone
-	detail.CreatedBy = request.CreatedBy
+	detail.CreatedBy = &dataCtx.UserId
 
 	if request.Password != nil {
 		password, err := hash.HashPassword(*request.Password)
@@ -112,6 +116,10 @@ func (r Repository) UserGetAll(ctx context.Context, filter Filter) ([]GetUserLis
 
 func (r Repository) UserUpdate(ctx context.Context, request UpdateUserRequest) *pkg.Error {
 	var detail entity.User
+	dataCtx, er := r.CheckCtx(ctx)
+	if er != nil {
+		return er
+	}
 
 	err := r.NewSelect().Model(&detail).Where("id = ?", &request.Id).Scan(ctx)
 	if err != nil {
@@ -150,7 +158,7 @@ func (r Repository) UserUpdate(ctx context.Context, request UpdateUserRequest) *
 
 	date := time.Now()
 	detail.UpdatedAt = &date
-	detail.UpdatedBy = request.UpdatedBy
+	detail.UpdatedBy = &dataCtx.UserId
 
 	_, err = r.NewUpdate().Model(&detail).Where("id = ?", detail.Id).Exec(ctx)
 
@@ -163,12 +171,16 @@ func (r Repository) UserUpdate(ctx context.Context, request UpdateUserRequest) *
 	return nil
 }
 
-func (r Repository) UserDelete(ctx context.Context, req DeleteUserRequest) *pkg.Error {
+func (r Repository) UserDelete(ctx context.Context, id string) *pkg.Error {
 
+	dataCtx, er := r.CheckCtx(ctx)
+	if er != nil {
+		return er
+	}
 	_, err := r.NewUpdate().
 		Table("users").
-		Where("deleted_at is null AND id = ?", req.Id).
-		Set("deleted_at = ?, deleted_by = ?", time.Now(), req.DeletedBy).
+		Where("deleted_at is null AND id = ?", id).
+		Set("deleted_at = ?, deleted_by = ?", time.Now(), dataCtx.UserId).
 		Exec(ctx)
 
 	if err != nil {
@@ -183,6 +195,10 @@ func (r Repository) UserDelete(ctx context.Context, req DeleteUserRequest) *pkg.
 
 func (r Repository) UserUpdatePassword(ctx context.Context, req UpdatePasswordRequest) *pkg.Error {
 
+	dataCtx, er := r.CheckCtx(ctx)
+	if er != nil {
+		return er
+	}
 	if req.NewPassword != nil {
 		password, err := hash.HashPassword(*req.NewPassword)
 		if err != nil {
@@ -197,7 +213,7 @@ func (r Repository) UserUpdatePassword(ctx context.Context, req UpdatePasswordRe
 	_, err := r.NewUpdate().
 		Table("users").
 		Where("deleted_at is null AND id = ?", req.Id).
-		Set("password = ?, updated_at = ?, updated_by = ?", req.NewPassword, time.Now(), req.UpdatedBy).
+		Set("password = ?, updated_at = ?, updated_by = ?", req.NewPassword, time.Now(), dataCtx.UserId).
 		Exec(ctx)
 
 	if err != nil {
