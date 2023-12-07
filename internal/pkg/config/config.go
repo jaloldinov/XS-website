@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+
 	"gopkg.in/yaml.v2"
 )
 
@@ -12,6 +13,7 @@ type Conf struct {
 	DBPassword  string `yaml:"db_password"`
 	Port        string `yaml:"port"`
 	JWTKey      string `yaml:"jwt_key"`
+	DefaultLang string `yaml:"default_lang"`
 }
 
 func GetConf() *Conf {

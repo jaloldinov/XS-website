@@ -87,6 +87,13 @@ func (a Auth) GetTokenData(ctx context.Context, token string) (TokenData, error)
 
 func (a Auth) HasPermission(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		var lang string
+		if len(c.Request.Header["Accept-Language"]) > 0 {
+			lang = strings.Split(c.Request.Header["Accept-Language"][0], ",")[0]
+		} else {
+			defaultLang := config.GetConf().DefaultLang
+			lang = defaultLang
+		}
 
 		tokenStr := c.Request.Header["Authorization"]
 
@@ -118,6 +125,7 @@ func (a Auth) HasPermission(roles ...string) gin.HandlerFunc {
 				c.Set("user_id", userDetail.Id)
 				c.Set("username", userDetail.Username)
 				c.Set("role", userDetail.Role)
+				c.Set("lang", lang)
 
 				c.Next()
 

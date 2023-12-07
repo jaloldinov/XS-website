@@ -20,7 +20,7 @@ import (
 type CtxData struct {
 	UserId string
 	Role   string
-	// Lang   string
+	Lang   string
 }
 
 type Database struct {
@@ -143,13 +143,13 @@ func (d Database) CheckCtx(ctx context.Context) (CtxData, *pkg.Error) {
 		})
 	}
 
-	// ctxLang, ok := ctx.Value("lang").(string)
-	// if !ok {
-	// 	fieldErrors = append(fieldErrors, pkg.FieldError{
-	// 		Err:   errors.New("missing field in ctx"),
-	// 		Field: "role",
-	// 	})
-	// }
+	ctxLang, ok := ctx.Value("lang").(string)
+	if !ok {
+		fieldErrors = append(fieldErrors, pkg.FieldError{
+			Err:   errors.New("missing field in ctx"),
+			Field: "role",
+		})
+	}
 
 	if len(fieldErrors) > 0 {
 		return CtxData{}, &pkg.Error{
@@ -162,7 +162,7 @@ func (d Database) CheckCtx(ctx context.Context) (CtxData, *pkg.Error) {
 	return CtxData{
 		UserId: userId,
 		Role:   ctxRole,
-		// Lang:   ctxLang,
+		Lang:   ctxLang,
 	}, nil
 }
 

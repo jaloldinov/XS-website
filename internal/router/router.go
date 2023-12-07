@@ -28,6 +28,9 @@ type User interface {
 
 type Post interface {
 	CreatePost(*gin.Context)
+	GetPostById(*gin.Context)
+	GetPostList(*gin.Context)
+	UpdatePost(*gin.Context)
 }
 
 type AuthController interface {
@@ -72,7 +75,11 @@ func (r *Router) Init(port string) error {
 	router.POST("/api/v1/admin/user/reset/password", r.auth.HasPermission("ADMIN"), userController.ResetUserPassword)
 
 	// #POST
-	router.POST("api/v1/admin/user/create", r.auth.HasPermission("ADMIN", "AUTHOR"), postController.CreatePost)
+	router.POST("api/v1/admin/post/create", r.auth.HasPermission("ADMIN"), postController.CreatePost)
+	router.GET("/api/v1/admin/post/:id", r.auth.HasPermission("ADMIN"), postController.PostGetById)
+	router.GET("/api/v1/admin/post/list", r.auth.HasPermission("ADMIN"), postController.GetPostList)
+	router.PUT("/api/v1/admin/post/:id", r.auth.HasPermission("ADMIN"), postController.UpdatePost)
+	router.DELETE("/api/v1/admin/post/:id", r.auth.HasPermission("ADMIN"), postController.DeletePost)
 
 	return router.Run(port)
 }

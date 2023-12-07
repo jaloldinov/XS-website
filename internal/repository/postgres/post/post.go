@@ -2,8 +2,12 @@ package post
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"time"
+	"xs/internal/entity"
 	"xs/internal/pkg"
 	"xs/internal/pkg/repository/postgres"
 
@@ -53,7 +57,8 @@ func (r Repository) PostCreate(ctx context.Context, request CreatePostRequest) (
 	detail.CreatedBy = dataCtx.UserId
 
 	detail.Status = true
-	detail.CreatedAt = time.Now()
+	timeNow := time.Now()
+	detail.CreatedAt = &timeNow
 
 	_, err := r.NewInsert().Model(&detail).Exec(ctx)
 
@@ -67,13 +72,12 @@ func (r Repository) PostCreate(ctx context.Context, request CreatePostRequest) (
 	return detail, nil
 }
 
-/*
-func (r Repository) PostsGetById(ctx context.Context, id string) (GetPostsResponse, *pkg.Error) {
-	var post GetPostsResponse
+func (r Repository) PostGetById(ctx context.Context, id string) (GetPostResponse, *pkg.Error) {
+	var post GetPostResponse
 
 	err := r.NewSelect().Model(&post).Where("id = ?", id).Scan(ctx)
 	if err != nil {
-		return GetPostsResponse{}, &pkg.Error{
+		return GetPostResponse{}, &pkg.Error{
 			Err:    pkg.WrapError(err, "selecting post get by id"),
 			Status: http.StatusInternalServerError,
 		}
@@ -82,43 +86,178 @@ func (r Repository) PostsGetById(ctx context.Context, id string) (GetPostsRespon
 	return post, nil
 }
 
-func (r Repository) PostsGetAll(ctx context.Context, filter Filter) ([]GetPostsListResponse, int, *pkg.Error) {
-	var list []GetPostsListResponse
+func (r Repository) PostGetAll(ctx context.Context, filter Filter) ([]GetPostListResponse, int, *pkg.Error) {
+	var list []GetPostListResponse
+	dataCtx, er := r.CheckCtx(ctx)
+	if er != nil {
+		return nil, 0, er
+	}
+	filter.Lang = &dataCtx.Lang
 
-	q := r.NewSelect().Model(&list)
-	q.WhereGroup(" and ", func(query *bun.SelectQuery) *bun.SelectQuery {
-		query.Where("deleted_at is null")
-		return query
-	})
-	if filter.Limit != nil {
-		q.Limit(*filter.Limit)
+	query := fmt.Sprintf(
+		`SELECT
+				    id,
+				    title,
+					content,
+					status,
+				    to_char(pub_date,'DD.MM.YYYY')
+				FROM posts WHERE deleted_at IS NULL`)
+	where := ""
+
+	query += where
+
+	if filter.Content != nil {
+		where += fmt.Sprintf(" AND lower(content->>'%s') similar to lower('%s')", *filter.Lang, "%"+*filter.Content+"%")
+	}
+
+	if filter.Title != nil {
+		where += fmt.Sprintf(" AND lower(title->>'%s') similar to lower('%s')", *filter.Lang, "%"+*filter.Title+"%")
+	}
+
+	if filter.Lang != nil {
+		where += fmt.Sprintf(" AND title->>'%s' is not null", *filter.Lang)
+	}
+
+	// if filter.From != nil {
+	// 	where += fmt.Sprintf(" AND (created_at > %s0) or (pub_date > %s0)", *filter.From, *filter.From)
+	// }
+
+	// if filter.To != nil {
+	// 	where += fmt.Sprintf(" AND (created_at < %s0) or (pub_date < %s0)", *filter.To, *filter.To)
+
+	// }
+
+	// if filter.PublishedAt != nil {
+	// 	publishedAt, err := time.Parse("02.01.2006", *filter.PublishedAt)
+	// 	if err != nil {
+	// 		return nil, 0, &pkg.Error{
+	// 			Err:    pkg.WrapError(err, "selecting population request list"),
+	// 			Status: http.StatusInternalServerError,
+	// 		}
+	// 	}
+	// 	where += fmt.Sprintf(" AND pub_date = %v", publishedAt)
+	// }
+
+	// if filter.PublishedFrom != nil {
+	// 	publishedFrom, err := time.Parse("02.01.2006", *filter.PublishedFrom)
+	// 	if err != nil {
+	// 		return nil, 0, &pkg.Error{
+	// 			Err:    pkg.WrapError(err, "selecting population request list"),
+	// 			Status: http.StatusInternalServerError,
+	// 		}
+	// 	}
+	// 	where += fmt.Sprintf(" AND pub_date >= %v", publishedFrom)
+	// }
+
+	// if filter.PublishedTo != nil {
+	// 	publishedTo, err := time.Parse("02.01.2006", *filter.PublishedTo)
+	// 	if err != nil {
+	// 		return nil, 0, &pkg.Error{
+	// 			Err:    pkg.WrapError(err, "selecting population request list"),
+	// 			Status: http.StatusInternalServerError,
+	// 		}
+	// 	}
+	// 	where += fmt.Sprintf(" AND pub_date <= %v", publishedTo)
+	// }
+
+	query += where
+
+	if filter.Order != nil {
+		query += fmt.Sprintf(" ORDER BY created_at %s", *filter.Order)
+	} else {
+		query += " ORDER BY created_at asc"
 	}
 
 	if filter.Offset != nil {
-		q.Offset(*filter.Offset)
+		query += fmt.Sprintf(" OFFSET  %d", *filter.Offset)
 	}
 
-	if filter.Postsname != nil {
-		q.WhereGroup(" and ", func(query *bun.SelectQuery) *bun.SelectQuery {
-			query.Where("lower(postname) like lower(?)", "%"+*filter.Postsname+"%")
-			return query
-		})
+	if filter.Limit != nil {
+		query += fmt.Sprintf(" LIMIT %d", *filter.Limit)
 	}
 
-	q.Order("created_at desc")
-
-	count, err := q.ScanAndCount(ctx)
+	rows, err := r.QueryContext(ctx, query)
 	if err != nil {
 		return nil, 0, &pkg.Error{
-			Err:    pkg.WrapError(err, "selecting post list"),
+			Err:    pkg.WrapError(err, "selecting population request list"),
+			Status: http.StatusInternalServerError,
+		}
+	}
+
+	for rows.Next() {
+		var detail GetPostListResponse
+		var titleB, contentB []byte
+		if err = rows.Scan(
+			&detail.Id,
+			&titleB,
+			&contentB,
+			&detail.Status,
+			&detail.PubDate,
+		); err != nil {
+			return nil, 0, &pkg.Error{
+				Err:    pkg.WrapError(err, "selecting population request list"),
+				Status: http.StatusInternalServerError,
+			}
+		}
+
+		var title, content map[string]string
+
+		err = json.Unmarshal(titleB, &title)
+		if err != nil {
+			return nil, 0, &pkg.Error{
+				Err:    pkg.WrapError(err, "selecting population request list"),
+				Status: http.StatusInternalServerError,
+			}
+		}
+
+		detail.Title = title[*filter.Lang]
+
+		err = json.Unmarshal(contentB, &content)
+		if err != nil {
+			return nil, 0, &pkg.Error{
+				Err:    pkg.WrapError(err, "selecting population request list"),
+				Status: http.StatusInternalServerError,
+			}
+		}
+
+		for k, _ := range content {
+			if content[k] != "" {
+				detail.ContentLanguages = append(detail.ContentLanguages, k)
+			}
+		}
+		for k, v := range title {
+			if title[k] != "" {
+				detail.TitleLanguages = append(detail.TitleLanguages, k)
+				detail.Title = v
+			}
+		}
+
+		list = append(list, detail)
+	}
+
+	var count int
+
+	countQuery := `
+		SELECT
+		    count(id)
+		FROM posts WHERE deleted_at IS NULL`
+
+	err = r.QueryRowContext(ctx, countQuery+where).Scan(&count)
+	if err != nil {
+		return nil, 0, &pkg.Error{
+			Err:    pkg.WrapError(err, "selecting population request list"),
 			Status: http.StatusInternalServerError,
 		}
 	}
 	return list, count, nil
 }
 
-func (r Repository) PostsUpdate(ctx context.Context, request UpdatePostsRequest) *pkg.Error {
-	var detail entity.Posts
+func (r Repository) PostUpdate(ctx context.Context, request UpdatePostRequest) *pkg.Error {
+	var detail entity.Post
+	dataCtx, er := r.CheckCtx(ctx)
+	if er != nil {
+		return er
+	}
 
 	err := r.NewSelect().Model(&detail).Where("id = ?", &request.Id).Scan(ctx)
 	if err != nil {
@@ -128,36 +267,32 @@ func (r Repository) PostsUpdate(ctx context.Context, request UpdatePostsRequest)
 		}
 	}
 
-	if request.Postsname != nil {
-		detail.Postsname = *request.Postsname
+	if request.Title != nil {
+		detail.Title = request.Title
 	}
-	if request.AvatarLink != nil {
-		detail.Avatar = *request.AvatarLink
+	if request.Content != nil {
+		detail.Content = request.Content
 	}
-	if request.FullName != nil {
-		detail.FullName = *request.FullName
-	}
-	if request.Gender != nil {
-		detail.Gender = *request.Gender
-	}
+	if request.PubDate != nil {
+		publishDate, err := time.Parse("2006-01-02", *request.PubDate)
+		if err != nil {
 
+			return &pkg.Error{
+				Err:    pkg.WrapError(err, "updating post publish date"),
+				Status: http.StatusInternalServerError,
+			}
+		}
+		detail.PubDate = &publishDate
+	}
 	if request.Status != nil {
-		detail.Status = *request.Status
+		detail.Status = request.Status
 	}
-
-	if request.Role != nil {
-		detail.Role = *request.Role
+	if request.AuthorId != nil {
+		detail.AuthorId = *request.AuthorId
 	}
-	if request.BirthDate != nil {
-		detail.BirthDate = *request.BirthDate
-	}
-	if request.Phone != nil {
-		detail.Phone = *request.Phone
-	}
-
+	detail.UpdatedBy = &dataCtx.UserId
 	date := time.Now()
 	detail.UpdatedAt = &date
-	detail.UpdatedBy = request.UpdatedBy
 
 	_, err = r.NewUpdate().Model(&detail).Where("id = ?", detail.Id).Exec(ctx)
 
@@ -170,12 +305,16 @@ func (r Repository) PostsUpdate(ctx context.Context, request UpdatePostsRequest)
 	return nil
 }
 
-func (r Repository) PostsDelete(ctx context.Context, req DeletePostsRequest) *pkg.Error {
+func (r Repository) PostDelete(ctx context.Context, id string) *pkg.Error {
+	dataCtx, er := r.CheckCtx(ctx)
+	if er != nil {
+		return er
+	}
 
 	_, err := r.NewUpdate().
 		Table("posts").
-		Where("deleted_at is null AND id = ?", req.Id).
-		Set("deleted_at = ?, deleted_by = ?", time.Now(), req.DeletedBy).
+		Where("deleted_at is null AND id = ?", id).
+		Set("deleted_at = ?, deleted_by = ?", time.Now(), dataCtx.UserId).
 		Exec(ctx)
 
 	if err != nil {
@@ -187,46 +326,3 @@ func (r Repository) PostsDelete(ctx context.Context, req DeletePostsRequest) *pk
 
 	return nil
 }
-
-func (r Repository) PostsUpdatePassword(ctx context.Context, req UpdatePasswordRequest) *pkg.Error {
-
-	if req.NewPassword != nil {
-		password, err := hash.HashPassword(*req.NewPassword)
-		if err != nil {
-			return &pkg.Error{
-				Err:    pkg.WrapError(err, "creating post hash password"),
-				Status: http.StatusInternalServerError,
-			}
-		}
-		req.NewPassword = &password
-	}
-
-	_, err := r.NewUpdate().
-		Table("posts").
-		Where("deleted_at is null AND id = ?", req.Id).
-		Set("password = ?, updated_at = ?, updated_by = ?", req.NewPassword, time.Now(), req.UpdatedBy).
-		Exec(ctx)
-
-	if err != nil {
-		return &pkg.Error{
-			Err:    errors.New("reset password row error, updating"),
-			Status: http.StatusInternalServerError,
-		}
-	}
-
-	return nil
-}
-
-func (r Repository) GetPostsByPostsname(ctx context.Context, postname string) (DetailPostsResponse, *pkg.Error) {
-	var detail DetailPostsResponse
-
-	err := r.NewSelect().Model(&detail).Where("postname = ?", postname).Scan(ctx)
-	if err != nil {
-		return DetailPostsResponse{}, &pkg.Error{
-			Err:    pkg.WrapError(err, "selecting post get by postname"),
-			Status: http.StatusInternalServerError,
-		}
-	}
-	return detail, nil
-}
-*/

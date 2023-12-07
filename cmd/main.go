@@ -1,13 +1,11 @@
 package main
 
 import (
-	"xs/internal/auth"
-
-	"xs/internal/pkg/config"
-	"xs/internal/pkg/repository/postgres"
-
 	"fmt"
 	"log"
+	"xs/internal/auth"
+	"xs/internal/pkg/config"
+	"xs/internal/pkg/repository/postgres"
 	"xs/internal/router"
 )
 
@@ -24,4 +22,5 @@ func main() {
 	r := router.New(authenticator, postgresDB)
 	fmt.Println(cfg.Port)
 	log.Fatalln(r.Init(fmt.Sprintf(":%s", "8080")))
+
 }
