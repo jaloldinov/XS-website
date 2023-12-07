@@ -19,7 +19,7 @@ import (
 
 type CtxData struct {
 	UserId string
-	// Role   string
+	Role   string
 	// Lang   string
 }
 
@@ -45,25 +45,25 @@ func New(DBUsername, DBPassword, DBPort, DBName string) *Database {
 	}
 }
 
-func (d Database) DeleteRow(ctx context.Context, table, id string) *pkg.Error {
+func (d Database) DeleteRow(ctx context.Context, table, role, id string) *pkg.Error {
 	dataCtx, er := d.CheckCtx(ctx)
 	if er != nil {
 		return er
 	}
 
-	// if dataCtx.Role == "" {
-	// 	return &pkg.Error{
-	// 		Err:    errors.New("role in context is required"),
-	// 		Status: http.StatusInternalServerError,
-	// 	}
-	// }
+	if dataCtx.Role == "" {
+		return &pkg.Error{
+			Err:    errors.New("role in context is required"),
+			Status: http.StatusInternalServerError,
+		}
+	}
 
-	// if dataCtx.Role != role {
-	// 	return &pkg.Error{
-	// 		Err:    errors.New(fmt.Sprintf("you have not permission to delete from table: %s", table)),
-	// 		Status: http.StatusInternalServerError,
-	// 	}
-	// }
+	if dataCtx.Role != role {
+		return &pkg.Error{
+			Err:    errors.New(fmt.Sprintf("you have not permission to delete from table: %s", table)),
+			Status: http.StatusInternalServerError,
+		}
+	}
 
 	_, err := d.NewUpdate().
 		Table(table).
@@ -135,13 +135,13 @@ func (d Database) CheckCtx(ctx context.Context) (CtxData, *pkg.Error) {
 			Field: "user_id",
 		})
 	}
-	// ctxRole, ok := ctx.Value("role").(string)
-	// if !ok {
-	// 	fieldErrors = append(fieldErrors, pkg.FieldError{
-	// 		Err:   errors.New("missing field in ctx"),
-	// 		Field: "role",
-	// 	})
-	// }
+	ctxRole, ok := ctx.Value("role").(string)
+	if !ok {
+		fieldErrors = append(fieldErrors, pkg.FieldError{
+			Err:   errors.New("missing field in ctx"),
+			Field: "role",
+		})
+	}
 
 	// ctxLang, ok := ctx.Value("lang").(string)
 	// if !ok {
@@ -161,7 +161,7 @@ func (d Database) CheckCtx(ctx context.Context) (CtxData, *pkg.Error) {
 
 	return CtxData{
 		UserId: userId,
-		// Role:   ctxRole,
+		Role:   ctxRole,
 		// Lang:   ctxLang,
 	}, nil
 }
