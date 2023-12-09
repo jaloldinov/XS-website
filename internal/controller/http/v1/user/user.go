@@ -1,7 +1,6 @@
 package user
 
 import (
-	"fmt"
 	"xs/internal/pkg"
 	"xs/internal/repository/postgres/user"
 	user_repo "xs/internal/repository/postgres/user"
@@ -34,7 +33,7 @@ func (uc Controller) CreateUser(c *gin.Context) {
 
 	avatarLink, err := file.NewService().Upload(c, data.Avatar, "avatar")
 	if err != nil {
-		fmt.Errorf("avatar file uploading error: %v", err)
+		response.RespondError(c, err)
 		return
 	}
 	data.AvatarLink = avatarLink
@@ -117,7 +116,7 @@ func (uc Controller) UpdateUser(c *gin.Context) {
 
 	avatarLink, err := file.NewService().Upload(c, data.Avatar, "avatar")
 	if err != nil {
-		fmt.Errorf("avatar file uploading error: %v", err)
+		response.RespondError(c, err)
 		return
 	}
 	data.AvatarLink = &avatarLink
