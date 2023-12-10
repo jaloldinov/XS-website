@@ -29,13 +29,16 @@ func (mc Controller) CreateMenu(c *gin.Context) {
 		return
 	}
 
-	typeE := "EXTRA"
-	if data.Type == typeE && data.ParentId == nil {
+	if data.Type == "EXTRA" && data.ParentId == nil {
 		c.JSON(http.StatusBadRequest, response.StatusOk{
 			Message: "parent_id is required!",
 			Status:  false,
 		})
 		return
+	}
+
+	if data.Type == "MAIN" {
+		data.ParentId = nil
 	}
 
 	// Dereference the pointer to access the map
