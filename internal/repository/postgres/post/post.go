@@ -36,11 +36,14 @@ func (r Repository) PostCreate(ctx context.Context, request CreatePostRequest) (
 	detail.Id = uuid.NewString()
 	detail.Title = request.Title
 	detail.Content = request.Content
+	detail.Slug = request.Slug
+	detail.AuthorId = request.AuthorId
+	detail.MenuId = request.MenuId
 
 	if request.AuthorId != nil {
-		detail.AuthorId = *request.AuthorId
+		detail.AuthorId = request.AuthorId
 	} else {
-		detail.AuthorId = dataCtx.UserId
+		detail.AuthorId = &dataCtx.UserId
 	}
 
 	if request.PubDate != nil {
@@ -74,14 +77,60 @@ func (r Repository) PostCreate(ctx context.Context, request CreatePostRequest) (
 
 func (r Repository) PostGetById(ctx context.Context, id string) (GetPostResponse, *pkg.Error) {
 	var post GetPostResponse
+	query := fmt.Sprintf(
+		`SELECT
+				posts.id,
+				posts.title,
+				posts.content,
+				posts.status,
+				to_char(posts.pub_date, 'DD.MM.YYYY') as pub_date,
+				users.full_name as author_name,
+				users.avatar as author_avatar,
+				posts.slug,
+				posts.menu_id
+			FROM posts
+			JOIN users ON users.id = posts.author_id
+			WHERE posts.deleted_at IS NULL AND posts.id = '%s' `, id)
 
-	err := r.NewSelect().Model(&post).Where("id = ?", id).Scan(ctx)
+	row := r.DB.QueryRowContext(ctx, query)
+	var titleB, contentB []byte
+	err := row.Scan(
+		&post.Id,
+		&titleB,
+		&contentB,
+		&post.Status,
+		&post.PubDate,
+		&post.AuthorName,
+		&post.AuthorAvatar,
+		&post.Slug,
+		&post.MenuId,
+	)
 	if err != nil {
 		return GetPostResponse{}, &pkg.Error{
 			Err:    pkg.WrapError(err, "selecting post get by id"),
 			Status: http.StatusInternalServerError,
 		}
 	}
+	var title, content map[string]string
+
+	err = json.Unmarshal(titleB, &title)
+	if err != nil {
+		return GetPostResponse{}, &pkg.Error{
+			Err:    pkg.WrapError(err, "json.Unmarshal(titleB, &title)"),
+			Status: http.StatusInternalServerError,
+		}
+	}
+
+	err = json.Unmarshal(contentB, &content)
+	if err != nil {
+		return GetPostResponse{}, &pkg.Error{
+			Err:    pkg.WrapError(err, "Unmarshal(contentB, &content)"),
+			Status: http.StatusInternalServerError,
+		}
+	}
+
+	post.Title = title
+	post.Content = content
 
 	return post, nil
 }
@@ -96,12 +145,16 @@ func (r Repository) PostGetAll(ctx context.Context, filter Filter) ([]GetPostLis
 
 	query := fmt.Sprintf(
 		`SELECT
-				    id,
-				    title,
-					content,
-					status,
-				    to_char(pub_date,'DD.MM.YYYY')
-				FROM posts WHERE deleted_at IS NULL`)
+				posts.id,
+				posts.title,
+				posts.content,
+				posts.status,
+				to_char(posts.pub_date, 'DD.MM.YYYY') as pub_date,
+				users.full_name as author_name,
+				users.avatar as author_avatar
+			FROM posts
+			JOIN users ON users.id = posts.author_id
+			WHERE posts.deleted_at IS NULL `)
 	where := ""
 
 	query += where
@@ -163,9 +216,9 @@ func (r Repository) PostGetAll(ctx context.Context, filter Filter) ([]GetPostLis
 	query += where
 
 	if filter.Order != nil {
-		query += fmt.Sprintf(" ORDER BY created_at %s", *filter.Order)
+		query += fmt.Sprintf(" ORDER BY posts.created_at %s", *filter.Order)
 	} else {
-		query += " ORDER BY created_at asc"
+		query += " ORDER BY posts.created_at asc"
 	}
 
 	if filter.Offset != nil {
@@ -193,6 +246,8 @@ func (r Repository) PostGetAll(ctx context.Context, filter Filter) ([]GetPostLis
 			&contentB,
 			&detail.Status,
 			&detail.PubDate,
+			&detail.AuthorName,
+			&detail.AuthorAvatar,
 		); err != nil {
 			return nil, 0, &pkg.Error{
 				Err:    pkg.WrapError(err, "selecting population request list"),

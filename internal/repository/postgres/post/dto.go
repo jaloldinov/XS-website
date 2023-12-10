@@ -29,7 +29,9 @@ type CreatePostRequest struct {
 	Content   map[string]string `json:"content" bun:"content"`
 	Status    bool              `json:"status" bun:"status"`
 	PubDate   *string           `json:"pub_date" bun:"pub_date"`
+	Slug      *string           `json:"slug" bun:"slug"`
 	AuthorId  *string           `json:"author_id" bun:"author_id"`
+	MenuId    *string           `json:"menu_id" bun:"menu_id"`
 	CreatedAt *time.Time        `json:"-" bun:"created_at"`
 	CreatedBy string            `json:"-" bun:"created_by"`
 	UpdatedAt *time.Time        `json:"-" bun:"updated_at"`
@@ -46,7 +48,9 @@ type CreatePostResponse struct {
 	Content   map[string]string `json:"content" bun:"content"`
 	Status    bool              `json:"status" bun:"status"`
 	PubDate   *time.Time        `json:"pub_date" bun:"pub_date"`
-	AuthorId  string            `json:"author_id" bun:"author_id"`
+	Slug      *string           `json:"slug" bun:"slug"`
+	AuthorId  *string           `json:"author_id" bun:"author_id"`
+	MenuId    *string           `json:"menu_id" bun:"menu_id"`
 	CreatedBy string            `json:"-" bun:"created_by"`
 	CreatedAt *time.Time        `json:"-" bun:"created_at"`
 }
@@ -54,12 +58,15 @@ type CreatePostResponse struct {
 type GetPostResponse struct {
 	bun.BaseModel `bun:"table:posts"`
 
-	Id       string            `json:"id" bun:"id,pk"`
-	Title    map[string]string `json:"title" bun:"title"`
-	Content  map[string]string `json:"content" bun:"content"`
-	Status   bool              `json:"status" bun:"status"`
-	PubDate  *string           `json:"pub_date" bun:"pub_date"`
-	AuthorId *string           `json:"author_id" bun:"author_id"`
+	Id           string            `json:"id" bun:"id,pk"`
+	Title        map[string]string `json:"title" bun:"title"`
+	Content      map[string]string `json:"content" bun:"content"`
+	Status       bool              `json:"status" bun:"status"`
+	PubDate      *string           `json:"pub_date" bun:"pub_date"`
+	Slug         *string           `json:"slug" bun:"slug"`
+	MenuId       *string           `json:"menu_id" bun:"menu_id"`
+	AuthorName   string            `json:"author_name" bun:"full_name"`
+	AuthorAvatar string            `json:"author_avatar" bun:"avatar"`
 }
 
 type GetPostListResponse struct {
@@ -71,6 +78,8 @@ type GetPostListResponse struct {
 	ContentLanguages []string `json:"content_languages"`
 	Status           bool     `json:"status" bun:"status"`
 	PubDate          *string  `json:"pub_date" bun:"pub_date"`
+	AuthorName       string   `json:"author_name" bun:"full_name"`
+	AuthorAvatar     string   `json:"author_avatar" bun:"avatar"`
 }
 
 type UpdatePostRequest struct {
@@ -79,5 +88,7 @@ type UpdatePostRequest struct {
 	Content  map[string]string `json:"content" bun:"content"`
 	Status   *bool             `json:"status" bun:"status"`
 	PubDate  *string           `json:"pub_date" bun:"pub_date"`
+	Slug     *string           `json:"slug" bun:"slug"`
 	AuthorId *string           `json:"author_id" bun:"author_id"`
+	MenuId   *string           `json:"menu_id" bun:"menu_id"`
 }

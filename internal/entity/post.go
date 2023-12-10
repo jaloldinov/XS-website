@@ -14,7 +14,9 @@ type Post struct {
 	Content   map[string]string `json:"content" bun:"content"`
 	Status    *bool             `json:"status" bun:"status"`
 	PubDate   *time.Time        `json:"pub_date" bun:"pub_date"`
+	Slug      *string           `json:"slug" bun:"slug"`
 	AuthorId  string            `json:"author_id" bun:"author_id"`
+	MenuId    *string           `json:"menu_id" bun:"menu_id"`
 	CreatedAt time.Time         `json:"-" bun:"created_at"`
 	CreatedBy string            `json:"-" bun:"created_by"`
 	UpdatedAt *time.Time        `json:"-" bun:"updated_at"`

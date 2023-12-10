@@ -8,6 +8,7 @@ import (
 	post_repo "xs/internal/repository/postgres/post"
 	"xs/internal/service/request"
 	"xs/internal/service/response"
+	"xs/internal/service/slug"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,10 +24,17 @@ func NewController(post Post) *Controller {
 func (pc Controller) CreatePost(c *gin.Context) {
 	var data post_repo.CreatePostRequest
 
-	if err := request.BindFunc(c, &data, "Title", "Content"); err != nil {
+	if err := request.BindFunc(c, &data, "Title", "Content", "MenuId"); err != nil {
 		response.RespondError(c, err)
 		return
 	}
+
+	// Dereference the pointer to access the map
+	title := data.Title
+	// Retrieve the title value for the "uz" key
+	uzTitle := (title)["uz"]
+	// Convert the title to slug
+	data.Slug = slug.Make(&uzTitle)
 
 	detail, er := pc.post.PostCreate(c, data)
 	if er != nil {
