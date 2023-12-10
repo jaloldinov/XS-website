@@ -97,7 +97,6 @@ func (mc Controller) GetMenuList(c *gin.Context) {
 	})
 }
 
-/*
 func (mc Controller) UpdateMenu(c *gin.Context) {
 	var data menu_repo.UpdateMenuRequest
 	if err := request.BindFunc(c, &data, "Title", "Content", "Status"); err != nil {
@@ -106,6 +105,12 @@ func (mc Controller) UpdateMenu(c *gin.Context) {
 	}
 
 	data.Id = c.Param("id")
+
+	title := data.Title
+	// Retrieve the title value for the "uz" key
+	uzTitle := (*title)["uz"]
+	// Convert the title to slug
+	data.Slug = slug.Make(&uzTitle)
 
 	er := mc.post.MenuUpdate(c, data)
 	if er != nil {
@@ -127,4 +132,3 @@ func (mc Controller) DeleteMenu(c *gin.Context) {
 	}
 	response.RespondNoData(c)
 }
-*/

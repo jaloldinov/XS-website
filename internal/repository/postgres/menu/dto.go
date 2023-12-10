@@ -62,11 +62,12 @@ type GetMenuListResponse struct {
 }
 
 type UpdateMenuRequest struct {
-	Id        string            `json:"id" bun:"id,pk"`
-	Title     map[string]string `json:"title" bun:"title"`
-	Content   map[string]string `json:"content" bun:"content"`
-	Status    *bool             `json:"status" bun:"status"`
-	PubDate   *string           `json:"pub_date" bun:"pub_date"`
-	AuthorId  *string           `json:"author_id" bun:"author_id"`
-	UpdatedBy *string           `json:"-"`
+	Id       string             `json:"id" bun:"id,pk"`
+	Title    *map[string]string `json:"title" bun:"title"`
+	Content  *map[string]string `json:"content" bun:"content"`
+	ParentId *string            `json:"parent_id" bun:"parent_id"`
+	IsStatic *bool              `json:"is_static" bun:"is_static"`
+	Status   *bool              `json:"status" bun:"status"`
+	Slug     *string            `json:"slug" bun:"slug"`
+	Type     *string            `json:"type" bun:"type"`
 }

@@ -134,7 +134,7 @@ func (r Repository) MenuGetAll(ctx context.Context, filter Filter) ([]GetMenuLis
 		}
 
 		detail.Title = title[*filter.Lang]
-
+		detail.Content = content[*filter.Lang]
 		err = json.Unmarshal(contentB, &content)
 		if err != nil {
 			return nil, 0, &pkg.Error{
@@ -217,10 +217,26 @@ func (r Repository) MenuUpdate(ctx context.Context, request UpdateMenuRequest) *
 	}
 
 	if request.Title != nil {
-		detail.Title = &request.Title
+		detail.Title = request.Title
 	}
 	if request.Content != nil {
-		detail.Content = request.Content
+		detail.Content = *request.Content
+	}
+	if request.ParentId != nil {
+		detail.ParentId = request.ParentId
+	}
+	if request.IsStatic != nil {
+		detail.IsStatic = request.IsStatic
+	}
+	if request.Status != nil {
+		detail.Status = request.Status
+	}
+	if request.Slug != nil {
+		detail.Slug = request.Slug
+	}
+
+	if request.Type != nil {
+		detail.Type = request.Type
 	}
 
 	detail.UpdatedBy = &dataCtx.UserId

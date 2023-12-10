@@ -96,6 +96,8 @@ func (r *Router) Init(port string) error {
 	// #MENU
 	router.POST("api/v1/admin/menu/create", r.auth.HasPermission("ADMIN"), menuController.CreateMenu)
 	router.GET("/api/v1/admin/menu/list", r.auth.HasPermission("ADMIN"), menuController.GetMenuList)
+	router.PUT("/api/v1/admin/menu/:id", r.auth.HasPermission("ADMIN"), menuController.UpdateMenu)
+	router.DELETE("/api/v1/admin/menu/:id", r.auth.HasPermission("ADMIN"), menuController.DeleteMenu)
 
 	return router.Run(port)
 }
