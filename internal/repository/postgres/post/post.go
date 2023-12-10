@@ -220,7 +220,7 @@ func (r Repository) PostGetAll(ctx context.Context, filter Filter) ([]GetPostLis
 			}
 		}
 
-		for k, _ := range content {
+		for k := range content {
 			if content[k] != "" {
 				detail.ContentLanguages = append(detail.ContentLanguages, k)
 			}
