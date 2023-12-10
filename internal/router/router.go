@@ -3,10 +3,12 @@ package router
 import (
 	"xs/internal/auth"
 	auth_controller "xs/internal/controller/http/v1/auth"
+	menu_controller "xs/internal/controller/http/v1/menu"
 	post_controller "xs/internal/controller/http/v1/post"
 	user_controller "xs/internal/controller/http/v1/user"
 
 	"xs/internal/pkg/repository/postgres"
+	menu_repo "xs/internal/repository/postgres/menu"
 	post_repo "xs/internal/repository/postgres/post"
 	user_repo "xs/internal/repository/postgres/user"
 
@@ -33,6 +35,13 @@ type Post interface {
 	UpdatePost(*gin.Context)
 }
 
+type Menu interface {
+	CreatePost(*gin.Context)
+	// GetPostById(*gin.Context)
+	// GetPostList(*gin.Context)
+	// UpdatePost(*gin.Context)
+}
+
 type AuthController interface {
 	SignIn(c *gin.Context)
 }
@@ -55,12 +64,15 @@ func (r *Router) Init(port string) error {
 	//repository
 	userRepo := user_repo.NewRepository(r.postgresDB)
 	postRepo := post_repo.NewRepository(r.postgresDB)
+	menuRepo := menu_repo.NewRepository(r.postgresDB)
 
 	// mediaRepo := media_repo.NewRepository(postgresDB, fileService)
 
 	//controller
 	userController := user_controller.NewController(userRepo)
 	postController := post_controller.NewController(postRepo)
+	menuController := menu_controller.NewController(menuRepo)
+
 	authController := auth_controller.NewController(userRepo, r.auth)
 
 	// #AUTH
@@ -80,6 +92,9 @@ func (r *Router) Init(port string) error {
 	router.GET("/api/v1/admin/post/list", r.auth.HasPermission("ADMIN"), postController.GetPostList)
 	router.PUT("/api/v1/admin/post/:id", r.auth.HasPermission("ADMIN"), postController.UpdatePost)
 	router.DELETE("/api/v1/admin/post/:id", r.auth.HasPermission("ADMIN"), postController.DeletePost)
+
+	// #MENU
+	router.POST("api/v1/admin/menu/create", r.auth.HasPermission("ADMIN"), menuController.CreateMenu)
 
 	return router.Run(port)
 }
