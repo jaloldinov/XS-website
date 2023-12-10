@@ -62,7 +62,7 @@ func (r Repository) MenuCreate(ctx context.Context, request CreateMenuRequest) (
 }
 
 func (r Repository) MenuGetAll(ctx context.Context, filter Filter) ([]GetMenuListResponse, int, *pkg.Error) {
-	var list []GetMenuListResponse
+	// var list []GetMenuListResponse
 	dataCtx, er := r.CheckCtx(ctx)
 	if er != nil {
 		return nil, 0, er
@@ -71,12 +71,13 @@ func (r Repository) MenuGetAll(ctx context.Context, filter Filter) ([]GetMenuLis
 
 	query := fmt.Sprintf(
 		`SELECT
-				    id,
-				    title,
-					content,
-					status,
-				    to_char(pub_date,'DD.MM.YYYY')
-				FROM menus WHERE deleted_at IS NULL`)
+			id,
+			title,
+			content,
+			status,
+			slug,
+			parent_id
+		FROM menu WHERE deleted_at IS NULL`)
 	where := ""
 
 	query += where
@@ -103,6 +104,8 @@ func (r Repository) MenuGetAll(ctx context.Context, filter Filter) ([]GetMenuLis
 		}
 	}
 
+	menuMap := make(map[string]*GetMenuListResponse)
+
 	for rows.Next() {
 		var detail GetMenuListResponse
 		var titleB, contentB []byte
@@ -111,6 +114,8 @@ func (r Repository) MenuGetAll(ctx context.Context, filter Filter) ([]GetMenuLis
 			&titleB,
 			&contentB,
 			&detail.Status,
+			&detail.Slug,
+			&detail.ParentId,
 		); err != nil {
 			return nil, 0, &pkg.Error{
 				Err:    pkg.WrapError(err, "selecting population request list"),
@@ -138,9 +143,10 @@ func (r Repository) MenuGetAll(ctx context.Context, filter Filter) ([]GetMenuLis
 			}
 		}
 
-		for k := range content {
+		for k, v := range content {
 			if content[k] != "" {
 				detail.ContentLanguages = append(detail.ContentLanguages, k)
+				detail.Content = v
 			}
 		}
 		for k, v := range title {
@@ -150,7 +156,31 @@ func (r Repository) MenuGetAll(ctx context.Context, filter Filter) ([]GetMenuLis
 			}
 		}
 
-		list = append(list, detail)
+		menuMap[detail.Id] = &detail
+	}
+
+	// Build the children hierarchy
+	for _, menu := range menuMap {
+		parentID := menu.ParentId
+		if parentID != nil {
+			parent, exists := menuMap[*parentID]
+			if exists {
+				if parent.Children == nil {
+					children := []GetMenuListResponse{*menu}
+					parent.Children = &children
+				} else {
+					*parent.Children = append(*parent.Children, *menu)
+				}
+			}
+		}
+	}
+
+	// Find the root-level menus
+	var rootMenus []GetMenuListResponse
+	for _, menu := range menuMap {
+		if menu.ParentId == nil {
+			rootMenus = append(rootMenus, *menu)
+		}
 	}
 
 	var count int
@@ -158,7 +188,7 @@ func (r Repository) MenuGetAll(ctx context.Context, filter Filter) ([]GetMenuLis
 	countQuery := `
 		SELECT
 		    count(id)
-		FROM menus WHERE deleted_at IS NULL`
+		FROM menu WHERE deleted_at IS NULL`
 
 	err = r.QueryRowContext(ctx, countQuery+where).Scan(&count)
 	if err != nil {
@@ -167,7 +197,8 @@ func (r Repository) MenuGetAll(ctx context.Context, filter Filter) ([]GetMenuLis
 			Status: http.StatusInternalServerError,
 		}
 	}
-	return list, count, nil
+
+	return rootMenus, count, nil
 }
 
 func (r Repository) MenuUpdate(ctx context.Context, request UpdateMenuRequest) *pkg.Error {
@@ -214,7 +245,7 @@ func (r Repository) MenuDelete(ctx context.Context, id string) *pkg.Error {
 	}
 
 	_, err := r.NewUpdate().
-		Table("menus").
+		Table("menu").
 		Where("deleted_at is null AND id = ?", id).
 		Set("deleted_at = ?, deleted_by = ?", time.Now(), dataCtx.UserId).
 		Exec(ctx)

@@ -1,7 +1,10 @@
 package menu
 
 import (
+	"errors"
 	"net/http"
+	"reflect"
+	"xs/internal/pkg"
 	menu_repo "xs/internal/repository/postgres/menu"
 	"xs/internal/service/request"
 	"xs/internal/service/response"
@@ -51,7 +54,6 @@ func (mc Controller) CreateMenu(c *gin.Context) {
 	response.Respond(c, detail)
 }
 
-/*
 func (mc Controller) GetMenuList(c *gin.Context) {
 	var filter menu_repo.Filter
 
@@ -92,6 +94,7 @@ func (mc Controller) GetMenuList(c *gin.Context) {
 	})
 }
 
+/*
 func (mc Controller) UpdateMenu(c *gin.Context) {
 	var data menu_repo.UpdateMenuRequest
 	if err := request.BindFunc(c, &data, "Title", "Content", "Status"); err != nil {

@@ -7,9 +7,10 @@ import (
 )
 
 type Filter struct {
-	Limit  *int
-	Offset *int
-	Lang   *string
+	Limit    *int
+	Offset   *int
+	Lang     *string
+	ParentId *string
 }
 
 type CreateMenuRequest struct {
@@ -46,17 +47,18 @@ type CreateMenuResponse struct {
 	CreatedAt *time.Time         `json:"-" bun:"created_at"`
 }
 
-// Children         *[]AdminGetListResponse `json:"children"`
 type GetMenuListResponse struct {
 	bun.BaseModel `bun:"table:menu"`
 
-	Id               string   `json:"id"`
-	Title            string   `json:"title"`
-	Content          string   `json:"content"`
-	TitleLanguages   []string `json:"title_languages"`
-	ContentLanguages []string `json:"content_languages"`
-	Status           bool     `json:"status"`
-	Slug             string   `json:"slug"`
+	Id               string                 `json:"id"`
+	Title            string                 `json:"title"`
+	Content          string                 `json:"content"`
+	TitleLanguages   []string               `json:"title_languages"`
+	ContentLanguages []string               `json:"content_languages"`
+	Status           bool                   `json:"status"`
+	Slug             string                 `json:"slug"`
+	ParentId         *string                `json:"parent_id"`
+	Children         *[]GetMenuListResponse `json:"children"`
 }
 
 type UpdateMenuRequest struct {
