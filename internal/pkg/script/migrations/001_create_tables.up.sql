@@ -13,6 +13,11 @@ CREATE TYPE "menu_type" AS ENUM (
   'EXTRA'
 );
 
+CREATE TYPE "file_type" AS ENUM (
+  'IMAGE',
+  'FILE'
+);
+
 CREATE TABLE "users" (
     "id" uuid PRIMARY KEY,
     "avatar" varchar,
@@ -64,4 +69,38 @@ CREATE TABLE "posts" (
     "updated_by" UUID REFERENCES "users"("id"),
     "deleted_at" TIMESTAMP,
     "deleted_by" UUID REFERENCES "users"("id")
+);
+
+CREATE TABLE "menu_file" (
+  "id" uuid PRIMARY KEY,
+  "link" varchar NOT NULL,
+  "type" file_type NOT NULL,
+  "marked_link" varchar,
+  "grouping" varchar,
+  "carusel" bool DEFAULT false,
+  "menu_id" uuid NOT NULL REFERENCES "menu"("id"),
+  "author_id" UUID NOT NULL REFERENCES "users"("id"),
+  "created_at" timestamp NOT NULL DEFAULT (now()),
+  "created_by" UUID NOT NULL REFERENCES "users"("id"),
+  "updated_at" TIMESTAMP,
+  "updated_by" UUID REFERENCES "users"("id"),
+  "deleted_at" TIMESTAMP,
+  "deleted_by" UUID REFERENCES "users"("id")
+);
+
+CREATE TABLE "post_file" (
+  "id" uuid PRIMARY KEY,
+  "link" varchar NOT NULL,
+  "type" file_type NOT NULL,
+  "marked_link" varchar,
+  "grouping" varchar,
+  "carusel" bool DEFAULT false,
+  "menu_id" uuid NOT NULL REFERENCES "menu"("id"),
+  "author_id" UUID NOT NULL REFERENCES "users"("id"),
+  "created_at" timestamp NOT NULL DEFAULT (now()),
+  "created_by" UUID NOT NULL REFERENCES "users"("id"),
+  "updated_at" TIMESTAMP,
+  "updated_by" UUID REFERENCES "users"("id"),
+  "deleted_at" TIMESTAMP,
+  "deleted_by" UUID REFERENCES "users"("id")
 );

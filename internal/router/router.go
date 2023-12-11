@@ -4,11 +4,13 @@ import (
 	"xs/internal/auth"
 	auth_controller "xs/internal/controller/http/v1/auth"
 	menu_controller "xs/internal/controller/http/v1/menu"
+	menu_file_controller "xs/internal/controller/http/v1/menu_file"
 	post_controller "xs/internal/controller/http/v1/post"
 	user_controller "xs/internal/controller/http/v1/user"
 
 	"xs/internal/pkg/repository/postgres"
 	menu_repo "xs/internal/repository/postgres/menu"
+	menu_file_repo "xs/internal/repository/postgres/menu_file"
 	post_repo "xs/internal/repository/postgres/post"
 	user_repo "xs/internal/repository/postgres/user"
 
@@ -17,29 +19,6 @@ import (
 
 type Auth interface {
 	HasPermission(roles ...string) gin.HandlerFunc
-}
-
-type User interface {
-	CreateUser(*gin.Context)
-	GetUserById(*gin.Context)
-	GetUserList(*gin.Context)
-	UpdateUser(*gin.Context)
-	DeleteUser(*gin.Context)
-	ResetUserPassword(*gin.Context)
-}
-
-type Post interface {
-	CreatePost(*gin.Context)
-	GetPostById(*gin.Context)
-	GetPostList(*gin.Context)
-	UpdatePost(*gin.Context)
-}
-
-type Menu interface {
-	CreatePost(*gin.Context)
-	// GetPostById(*gin.Context)
-	// GetPostList(*gin.Context)
-	// UpdatePost(*gin.Context)
 }
 
 type AuthController interface {
@@ -65,6 +44,7 @@ func (r *Router) Init(port string) error {
 	userRepo := user_repo.NewRepository(r.postgresDB)
 	postRepo := post_repo.NewRepository(r.postgresDB)
 	menuRepo := menu_repo.NewRepository(r.postgresDB)
+	menuFileRepo := menu_file_repo.NewRepository(r.postgresDB)
 
 	// mediaRepo := media_repo.NewRepository(postgresDB, fileService)
 
@@ -72,7 +52,7 @@ func (r *Router) Init(port string) error {
 	userController := user_controller.NewController(userRepo)
 	postController := post_controller.NewController(postRepo)
 	menuController := menu_controller.NewController(menuRepo)
-
+	MenuFileController := menu_file_controller.NewController(menuFileRepo)
 	authController := auth_controller.NewController(userRepo, r.auth)
 
 	// #AUTH
@@ -98,6 +78,13 @@ func (r *Router) Init(port string) error {
 	router.GET("/api/v1/admin/menu/list", r.auth.HasPermission("ADMIN"), menuController.GetMenuList)
 	router.PUT("/api/v1/admin/menu/:id", r.auth.HasPermission("ADMIN"), menuController.UpdateMenu)
 	router.DELETE("/api/v1/admin/menu/:id", r.auth.HasPermission("ADMIN"), menuController.DeleteMenu)
+
+	// #MENU_FILE
+	router.POST("api/v1/admin/menu-file/create", r.auth.HasPermission("ADMIN"), MenuFileController.CreateMenuFile)
+	router.GET("/api/v1/admin/menu-file/list", r.auth.HasPermission("ADMIN"), MenuFileController.GetMenuFileList)
+	router.GET("/api/v1/admin/menu-file/:id", r.auth.HasPermission("ADMIN"), MenuFileController.GetMenuFileById)
+	router.PUT("/api/v1/admin/menu-file/:id", r.auth.HasPermission("ADMIN"), MenuFileController.UpdateMenuFile)
+	router.DELETE("/api/v1/admin/menu-file/:id", r.auth.HasPermission("ADMIN"), MenuFileController.DeleteMenuFile)
 
 	return router.Run(port)
 }

@@ -49,10 +49,10 @@ func (s Service) Upload(ctx context.Context, file *multipart.FileHeader, folder 
 	}
 
 	contentTypes := map[string]bool{
-		// "application/msword": true,
-		"image/jpeg": true,
-		"image/png":  true,
-		// "application/pdf":    true,
+		"application/msword": true,
+		"image/jpeg":         true,
+		"image/png":          true,
+		"application/pdf":    true,
 		// "application/vnd.openxmlformats-officedocument.wordprocessingml.document": true,
 	}
 
