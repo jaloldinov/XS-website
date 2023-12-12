@@ -5,12 +5,16 @@ import (
 	auth_controller "xs/internal/controller/http/v1/auth"
 	menu_controller "xs/internal/controller/http/v1/menu"
 	menu_file_controller "xs/internal/controller/http/v1/menu_file"
+	post_file_controller "xs/internal/controller/http/v1/post_file"
+
 	post_controller "xs/internal/controller/http/v1/post"
 	user_controller "xs/internal/controller/http/v1/user"
 
 	"xs/internal/pkg/repository/postgres"
 	menu_repo "xs/internal/repository/postgres/menu"
 	menu_file_repo "xs/internal/repository/postgres/menu_file"
+	post_file_repo "xs/internal/repository/postgres/post_file"
+
 	post_repo "xs/internal/repository/postgres/post"
 	user_repo "xs/internal/repository/postgres/user"
 
@@ -45,6 +49,7 @@ func (r *Router) Init(port string) error {
 	postRepo := post_repo.NewRepository(r.postgresDB)
 	menuRepo := menu_repo.NewRepository(r.postgresDB)
 	menuFileRepo := menu_file_repo.NewRepository(r.postgresDB)
+	postFileRepo := post_file_repo.NewRepository(r.postgresDB)
 
 	// mediaRepo := media_repo.NewRepository(postgresDB, fileService)
 
@@ -53,6 +58,8 @@ func (r *Router) Init(port string) error {
 	postController := post_controller.NewController(postRepo)
 	menuController := menu_controller.NewController(menuRepo)
 	MenuFileController := menu_file_controller.NewController(menuFileRepo)
+	PostFileController := post_file_controller.NewController(postFileRepo)
+
 	authController := auth_controller.NewController(userRepo, r.auth)
 
 	// #AUTH
@@ -85,6 +92,13 @@ func (r *Router) Init(port string) error {
 	router.GET("/api/v1/admin/menu-file/:id", r.auth.HasPermission("ADMIN"), MenuFileController.GetMenuFileById)
 	router.PUT("/api/v1/admin/menu-file/:id", r.auth.HasPermission("ADMIN"), MenuFileController.UpdateMenuFile)
 	router.DELETE("/api/v1/admin/menu-file/:id", r.auth.HasPermission("ADMIN"), MenuFileController.DeleteMenuFile)
+
+	// #POST_FILE
+	router.POST("api/v1/admin/post-file/create", r.auth.HasPermission("ADMIN"), PostFileController.CreatePostFile)
+	router.GET("/api/v1/admin/post-file/list", r.auth.HasPermission("ADMIN"), PostFileController.GetPostFileList)
+	router.GET("/api/v1/admin/post-file/:id", r.auth.HasPermission("ADMIN"), PostFileController.GetPostFileById)
+	router.PUT("/api/v1/admin/post-file/:id", r.auth.HasPermission("ADMIN"), PostFileController.UpdatePostFile)
+	router.DELETE("/api/v1/admin/post-file/:id", r.auth.HasPermission("ADMIN"), PostFileController.DeletePostFile)
 
 	return router.Run(port)
 }
