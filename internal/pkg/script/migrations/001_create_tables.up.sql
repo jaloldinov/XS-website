@@ -95,7 +95,7 @@ CREATE TABLE "post_file" (
   "marked_link" varchar,
   "grouping" varchar,
   "carusel" bool DEFAULT false,
-  "menu_id" uuid NOT NULL REFERENCES "menu"("id"),
+  "post_id" uuid NOT NULL REFERENCES "posts"("id"),
   "author_id" UUID NOT NULL REFERENCES "users"("id"),
   "created_at" timestamp NOT NULL DEFAULT (now()),
   "created_by" UUID NOT NULL REFERENCES "users"("id"),

@@ -133,7 +133,7 @@ func (r Repository) MenuFileUpdate(ctx context.Context, request UpdateMenuFileRe
 		}
 	}
 
-	if request.FileLink != nil {
+	if request.FileLink != nil && *request.FileLink != "" {
 		detail.Link = *request.FileLink
 	}
 
@@ -171,12 +171,12 @@ func (r Repository) MenuFileUpdate(ctx context.Context, request UpdateMenuFileRe
 }
 
 func (r Repository) MenuFileDelete(ctx context.Context, id string) *pkg.Error {
-
 	dataCtx, er := r.CheckCtx(ctx)
 	if er != nil {
 		return er
 	}
-	_, err := r.NewUpdate().
+
+	result, err := r.NewUpdate().
 		Table("menu_file").
 		Where("deleted_at is null AND id = ?", id).
 		Set("deleted_at = ?, deleted_by = ?", time.Now(), dataCtx.UserId).
@@ -186,6 +186,14 @@ func (r Repository) MenuFileDelete(ctx context.Context, id string) *pkg.Error {
 		return &pkg.Error{
 			Err:    errors.New("delete row error, updating"),
 			Status: http.StatusInternalServerError,
+		}
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return &pkg.Error{
+			Err:    errors.New("no matching ID found"),
+			Status: http.StatusNotFound,
 		}
 	}
 
