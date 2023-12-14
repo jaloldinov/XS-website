@@ -170,49 +170,49 @@ func (r Repository) PostGetAll(ctx context.Context, filter Filter) ([]GetPostLis
 	if filter.Lang != nil {
 		where += fmt.Sprintf(" AND title->>'%s' is not null", *filter.Lang)
 	}
+	/*
+		// if filter.From != nil {
+		// 	where += fmt.Sprintf(" AND (created_at > %s0) or (pub_date > %s0)", *filter.From, *filter.From)
+		// }
 
-	// if filter.From != nil {
-	// 	where += fmt.Sprintf(" AND (created_at > %s0) or (pub_date > %s0)", *filter.From, *filter.From)
-	// }
+		// if filter.To != nil {
+		// 	where += fmt.Sprintf(" AND (created_at < %s0) or (pub_date < %s0)", *filter.To, *filter.To)
 
-	// if filter.To != nil {
-	// 	where += fmt.Sprintf(" AND (created_at < %s0) or (pub_date < %s0)", *filter.To, *filter.To)
+		// }
 
-	// }
+		// if filter.PublishedAt != nil {
+		// 	publishedAt, err := time.Parse("02.01.2006", *filter.PublishedAt)
+		// 	if err != nil {
+		// 		return nil, 0, &pkg.Error{
+		// 			Err:    pkg.WrapError(err, "selecting population request list"),
+		// 			Status: http.StatusInternalServerError,
+		// 		}
+		// 	}
+		// 	where += fmt.Sprintf(" AND pub_date = %v", publishedAt)
+		// }
 
-	// if filter.PublishedAt != nil {
-	// 	publishedAt, err := time.Parse("02.01.2006", *filter.PublishedAt)
-	// 	if err != nil {
-	// 		return nil, 0, &pkg.Error{
-	// 			Err:    pkg.WrapError(err, "selecting population request list"),
-	// 			Status: http.StatusInternalServerError,
-	// 		}
-	// 	}
-	// 	where += fmt.Sprintf(" AND pub_date = %v", publishedAt)
-	// }
+		// if filter.PublishedFrom != nil {
+		// 	publishedFrom, err := time.Parse("02.01.2006", *filter.PublishedFrom)
+		// 	if err != nil {
+		// 		return nil, 0, &pkg.Error{
+		// 			Err:    pkg.WrapError(err, "selecting population request list"),
+		// 			Status: http.StatusInternalServerError,
+		// 		}
+		// 	}
+		// 	where += fmt.Sprintf(" AND pub_date >= %v", publishedFrom)
+		// }
 
-	// if filter.PublishedFrom != nil {
-	// 	publishedFrom, err := time.Parse("02.01.2006", *filter.PublishedFrom)
-	// 	if err != nil {
-	// 		return nil, 0, &pkg.Error{
-	// 			Err:    pkg.WrapError(err, "selecting population request list"),
-	// 			Status: http.StatusInternalServerError,
-	// 		}
-	// 	}
-	// 	where += fmt.Sprintf(" AND pub_date >= %v", publishedFrom)
-	// }
-
-	// if filter.PublishedTo != nil {
-	// 	publishedTo, err := time.Parse("02.01.2006", *filter.PublishedTo)
-	// 	if err != nil {
-	// 		return nil, 0, &pkg.Error{
-	// 			Err:    pkg.WrapError(err, "selecting population request list"),
-	// 			Status: http.StatusInternalServerError,
-	// 		}
-	// 	}
-	// 	where += fmt.Sprintf(" AND pub_date <= %v", publishedTo)
-	// }
-
+		// if filter.PublishedTo != nil {
+		// 	publishedTo, err := time.Parse("02.01.2006", *filter.PublishedTo)
+		// 	if err != nil {
+		// 		return nil, 0, &pkg.Error{
+		// 			Err:    pkg.WrapError(err, "selecting population request list"),
+		// 			Status: http.StatusInternalServerError,
+		// 		}
+		// 	}
+		// 	where += fmt.Sprintf(" AND pub_date <= %v", publishedTo)
+		// }
+	*/
 	query += where
 
 	if filter.Order != nil {
@@ -388,4 +388,28 @@ func (r Repository) PostDelete(ctx context.Context, id string) *pkg.Error {
 	}
 
 	return nil
+}
+
+func (r Repository) IsMenuStatic(ctx context.Context, id string) (bool, *pkg.Error) {
+	var isStatic bool
+	query := fmt.Sprintf(
+		`SELECT
+				is_static
+			FROM menu
+			WHERE deleted_at IS NULL AND menu.id = '%s' `, id)
+
+	row := r.DB.QueryRowContext(ctx, query)
+
+	err := row.Scan(
+		&isStatic,
+	)
+
+	if err != nil {
+		return false, &pkg.Error{
+			Err:    errors.New("menu not found"),
+			Status: http.StatusNotFound,
+		}
+	}
+
+	return isStatic, nil
 }

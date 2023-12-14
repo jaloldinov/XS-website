@@ -8,6 +8,8 @@ import (
 	post_file_controller "xs/internal/controller/http/v1/post_file"
 
 	hashtag_controller "xs/internal/controller/http/v1/hashtag"
+	post_hashtag_controller "xs/internal/controller/http/v1/post_hashtag"
+
 	post_controller "xs/internal/controller/http/v1/post"
 	user_controller "xs/internal/controller/http/v1/user"
 
@@ -17,6 +19,8 @@ import (
 	post_file_repo "xs/internal/repository/postgres/post_file"
 
 	hashtag_repo "xs/internal/repository/postgres/hashtag"
+	post_hashtag_repo "xs/internal/repository/postgres/post_hashtag"
+
 	post_repo "xs/internal/repository/postgres/post"
 	user_repo "xs/internal/repository/postgres/user"
 
@@ -54,6 +58,7 @@ func (r *Router) Init(port string) error {
 	menuFileRepo := menu_file_repo.NewRepository(r.postgresDB)
 	postFileRepo := post_file_repo.NewRepository(r.postgresDB)
 	hashtagRepo := hashtag_repo.NewRepository(r.postgresDB)
+	postHashtagRepo := post_hashtag_repo.NewRepository(r.postgresDB)
 
 	//controller
 	authController := auth_controller.NewController(userRepo, r.auth)
@@ -64,6 +69,7 @@ func (r *Router) Init(port string) error {
 	menuFileController := menu_file_controller.NewController(menuFileRepo)
 	postFileController := post_file_controller.NewController(postFileRepo)
 	hashtagController := hashtag_controller.NewController(hashtagRepo)
+	postHashtagController := post_hashtag_controller.NewController(postHashtagRepo)
 
 	// #AUTH
 	router.POST("/api/v1/admin/sign-in", authController.SignIn)
@@ -109,6 +115,11 @@ func (r *Router) Init(port string) error {
 	router.GET("/api/v1/admin/hashtag/:id", r.auth.HasPermission("ADMIN"), hashtagController.GetHashtagById)
 	router.PUT("/api/v1/admin/hashtag/:id", r.auth.HasPermission("ADMIN"), hashtagController.UpdateHashtag)
 	router.DELETE("/api/v1/admin/hashtag/:id", r.auth.HasPermission("ADMIN"), hashtagController.DeleteHashtag)
+
+	// #POST_HASHTAG
+	router.POST("api/v1/admin/post-hashtag/create", r.auth.HasPermission("ADMIN"), postHashtagController.CreatePostHashtag)
+	router.GET("/api/v1/admin/post-hashtag/list/:post_id", r.auth.HasPermission("ADMIN"), postHashtagController.GetPostHashtagList)
+	router.DELETE("/api/v1/admin/post-hashtag/:id", r.auth.HasPermission("ADMIN"), postHashtagController.DeletePostHashtag)
 
 	return router.Run(port)
 }

@@ -29,6 +29,17 @@ func (pc Controller) CreatePost(c *gin.Context) {
 		return
 	}
 
+	isStatic, err := pc.post.IsMenuStatic(c, *data.MenuId)
+	if err != nil {
+		response.RespondError(c, err)
+		return
+	}
+	if isStatic {
+		c.JSON(http.StatusNotAcceptable, response.StatusBadRequest{
+			Error: "menu is static! you can't create a post on that menu",
+		})
+		return
+	}
 	// Dereference the pointer to access the map
 	title := data.Title
 	// Retrieve the title value for the "uz" key

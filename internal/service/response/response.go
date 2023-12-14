@@ -40,3 +40,7 @@ type StatusOk struct {
 	Message string `json:"message"`
 	Status  bool   `json:"status"`
 }
+
+type StatusBadRequest struct {
+	Error string `json:"error"`
+}

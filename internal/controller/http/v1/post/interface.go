@@ -12,4 +12,6 @@ type Post interface {
 	PostGetAll(ctx context.Context, filter post.Filter) ([]post.GetPostListResponse, int, *pkg.Error)
 	PostUpdate(ctx context.Context, data post.UpdatePostRequest) *pkg.Error
 	PostDelete(ctx context.Context, id string) *pkg.Error
+
+	IsMenuStatic(ctx context.Context, menu_id string) (bool, *pkg.Error)
 }
