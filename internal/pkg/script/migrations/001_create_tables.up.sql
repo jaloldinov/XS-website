@@ -104,3 +104,25 @@ CREATE TABLE "post_file" (
   "deleted_at" TIMESTAMP,
   "deleted_by" UUID REFERENCES "users"("id")
 );
+
+CREATE TABLE "hashtags" (
+  "id" uuid PRIMARY KEY,
+  "name" varchar NOT NULL,
+  "status" bool NOT NULL DEFAULT TRUE,
+  "created_at" timestamp NOT NULL DEFAULT (now()),
+  "created_by" UUID NOT NULL REFERENCES "users"("id"),
+  "updated_at" TIMESTAMP,
+  "updated_by" UUID REFERENCES "users"("id"),
+  "deleted_at" TIMESTAMP,
+  "deleted_by" UUID REFERENCES "users"("id")
+);
+
+CREATE TABLE "post_hashtag" (
+  "id" uuid PRIMARY KEY,
+  "post_id" uuid NOT NULL REFERENCES "posts"("id"),
+  "hashtag_id" uuid NOT NULL REFERENCES "hashtags"("id"),
+  "created_at" timestamp NOT NULL DEFAULT (now()),
+  "created_by" UUID NOT NULL REFERENCES "users"("id"),
+  "deleted_at" TIMESTAMP,
+  "deleted_by" UUID REFERENCES "users"("id")
+);

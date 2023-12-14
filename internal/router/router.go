@@ -7,6 +7,7 @@ import (
 	menu_file_controller "xs/internal/controller/http/v1/menu_file"
 	post_file_controller "xs/internal/controller/http/v1/post_file"
 
+	hashtag_controller "xs/internal/controller/http/v1/hashtag"
 	post_controller "xs/internal/controller/http/v1/post"
 	user_controller "xs/internal/controller/http/v1/user"
 
@@ -15,6 +16,7 @@ import (
 	menu_file_repo "xs/internal/repository/postgres/menu_file"
 	post_file_repo "xs/internal/repository/postgres/post_file"
 
+	hashtag_repo "xs/internal/repository/postgres/hashtag"
 	post_repo "xs/internal/repository/postgres/post"
 	user_repo "xs/internal/repository/postgres/user"
 
@@ -46,21 +48,22 @@ func (r *Router) Init(port string) error {
 
 	//repository
 	userRepo := user_repo.NewRepository(r.postgresDB)
+
 	postRepo := post_repo.NewRepository(r.postgresDB)
 	menuRepo := menu_repo.NewRepository(r.postgresDB)
 	menuFileRepo := menu_file_repo.NewRepository(r.postgresDB)
 	postFileRepo := post_file_repo.NewRepository(r.postgresDB)
-
-	// mediaRepo := media_repo.NewRepository(postgresDB, fileService)
+	hashtagRepo := hashtag_repo.NewRepository(r.postgresDB)
 
 	//controller
+	authController := auth_controller.NewController(userRepo, r.auth)
+
 	userController := user_controller.NewController(userRepo)
 	postController := post_controller.NewController(postRepo)
 	menuController := menu_controller.NewController(menuRepo)
-	MenuFileController := menu_file_controller.NewController(menuFileRepo)
-	PostFileController := post_file_controller.NewController(postFileRepo)
-
-	authController := auth_controller.NewController(userRepo, r.auth)
+	menuFileController := menu_file_controller.NewController(menuFileRepo)
+	postFileController := post_file_controller.NewController(postFileRepo)
+	hashtagController := hashtag_controller.NewController(hashtagRepo)
 
 	// #AUTH
 	router.POST("/api/v1/admin/sign-in", authController.SignIn)
@@ -87,18 +90,25 @@ func (r *Router) Init(port string) error {
 	router.DELETE("/api/v1/admin/menu/:id", r.auth.HasPermission("ADMIN"), menuController.DeleteMenu)
 
 	// #MENU_FILE
-	router.POST("api/v1/admin/menu-file/create", r.auth.HasPermission("ADMIN"), MenuFileController.CreateMenuFile)
-	router.GET("/api/v1/admin/menu-file/list", r.auth.HasPermission("ADMIN"), MenuFileController.GetMenuFileList)
-	router.GET("/api/v1/admin/menu-file/:id", r.auth.HasPermission("ADMIN"), MenuFileController.GetMenuFileById)
-	router.PUT("/api/v1/admin/menu-file/:id", r.auth.HasPermission("ADMIN"), MenuFileController.UpdateMenuFile)
-	router.DELETE("/api/v1/admin/menu-file/:id", r.auth.HasPermission("ADMIN"), MenuFileController.DeleteMenuFile)
+	router.POST("api/v1/admin/menu-file/create", r.auth.HasPermission("ADMIN"), menuFileController.CreateMenuFile)
+	router.GET("/api/v1/admin/menu-file/list", r.auth.HasPermission("ADMIN"), menuFileController.GetMenuFileList)
+	router.GET("/api/v1/admin/menu-file/:id", r.auth.HasPermission("ADMIN"), menuFileController.GetMenuFileById)
+	router.PUT("/api/v1/admin/menu-file/:id", r.auth.HasPermission("ADMIN"), menuFileController.UpdateMenuFile)
+	router.DELETE("/api/v1/admin/menu-file/:id", r.auth.HasPermission("ADMIN"), menuFileController.DeleteMenuFile)
 
 	// #POST_FILE
-	router.POST("api/v1/admin/post-file/create", r.auth.HasPermission("ADMIN"), PostFileController.CreatePostFile)
-	router.GET("/api/v1/admin/post-file/list", r.auth.HasPermission("ADMIN"), PostFileController.GetPostFileList)
-	router.GET("/api/v1/admin/post-file/:id", r.auth.HasPermission("ADMIN"), PostFileController.GetPostFileById)
-	router.PUT("/api/v1/admin/post-file/:id", r.auth.HasPermission("ADMIN"), PostFileController.UpdatePostFile)
-	router.DELETE("/api/v1/admin/post-file/:id", r.auth.HasPermission("ADMIN"), PostFileController.DeletePostFile)
+	router.POST("api/v1/admin/post-file/create", r.auth.HasPermission("ADMIN"), postFileController.CreatePostFile)
+	router.GET("/api/v1/admin/post-file/list", r.auth.HasPermission("ADMIN"), postFileController.GetPostFileList)
+	router.GET("/api/v1/admin/post-file/:id", r.auth.HasPermission("ADMIN"), postFileController.GetPostFileById)
+	router.PUT("/api/v1/admin/post-file/:id", r.auth.HasPermission("ADMIN"), postFileController.UpdatePostFile)
+	router.DELETE("/api/v1/admin/post-file/:id", r.auth.HasPermission("ADMIN"), postFileController.DeletePostFile)
+
+	// #HASHTAG
+	router.POST("api/v1/admin/hashtag/create", r.auth.HasPermission("ADMIN"), hashtagController.CreateHashtag)
+	router.GET("/api/v1/admin/hashtag/list", r.auth.HasPermission("ADMIN"), hashtagController.GetHashtagList)
+	router.GET("/api/v1/admin/hashtag/:id", r.auth.HasPermission("ADMIN"), hashtagController.GetHashtagById)
+	router.PUT("/api/v1/admin/hashtag/:id", r.auth.HasPermission("ADMIN"), hashtagController.UpdateHashtag)
+	router.DELETE("/api/v1/admin/hashtag/:id", r.auth.HasPermission("ADMIN"), hashtagController.DeleteHashtag)
 
 	return router.Run(port)
 }
