@@ -260,7 +260,7 @@ func (r Repository) MenuDelete(ctx context.Context, id string) *pkg.Error {
 		return er
 	}
 
-	_, err := r.NewUpdate().
+	result, err := r.NewUpdate().
 		Table("menu").
 		Where("deleted_at is null AND id = ?", id).
 		Set("deleted_at = ?, deleted_by = ?", time.Now(), dataCtx.UserId).
@@ -270,6 +270,14 @@ func (r Repository) MenuDelete(ctx context.Context, id string) *pkg.Error {
 		return &pkg.Error{
 			Err:    errors.New("delete row error, updating"),
 			Status: http.StatusInternalServerError,
+		}
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return &pkg.Error{
+			Err:    errors.New("no matching ID found"),
+			Status: http.StatusNotFound,
 		}
 	}
 
