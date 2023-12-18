@@ -24,8 +24,15 @@ func NewController(post Menu) *Controller {
 func (mc Controller) CreateMenu(c *gin.Context) {
 	var data menu_repo.CreateMenuRequest
 
-	if err := request.BindFunc(c, &data, "Title", "Content", "Type"); err != nil {
+	if err := request.BindFunc(c, &data, "Title", "Content", "Type", "Index"); err != nil {
 		response.RespondError(c, err)
+		return
+	}
+
+	if data.Index <= 0 {
+		c.JSON(http.StatusBadRequest, response.CustomError{
+			Message: "Index must be greater than 0!",
+		})
 		return
 	}
 
@@ -126,6 +133,23 @@ func (mc Controller) DeleteMenu(c *gin.Context) {
 	Id := c.Param("id")
 
 	er := mc.post.MenuDelete(c, Id)
+	if er != nil {
+		response.RespondError(c, er)
+		return
+	}
+	response.RespondNoData(c)
+}
+
+func (mc Controller) UpdateMenuIndex(c *gin.Context) {
+	var data menu_repo.UpdateMenuIndex
+	if err := request.BindFunc(c, &data, "Index"); err != nil {
+		response.RespondError(c, err)
+		return
+	}
+	Id := c.Param("id")
+	data.Id = &Id
+
+	er := mc.post.UpdateIndex(c, data)
 	if er != nil {
 		response.RespondError(c, er)
 		return

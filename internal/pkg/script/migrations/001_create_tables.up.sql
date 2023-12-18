@@ -46,6 +46,7 @@ CREATE TABLE "menu" (
   "status" bool DEFAULT true,
   "slug" varchar NOT NULL,
   "type" menu_type NOT NULL,
+  "index" INT NOT NULL,
   "created_at" timestamp NOT NULL DEFAULT (now()),
   "created_by" uuid REFERENCES "users" ("id"),
   "updated_at" timestamp,

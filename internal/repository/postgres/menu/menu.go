@@ -44,10 +44,116 @@ func (r Repository) MenuCreate(ctx context.Context, request CreateMenuRequest) (
 
 	detail.Slug = request.Slug
 	detail.Type = &request.Type
+	detail.Index = request.Index
 	detail.CreatedBy = dataCtx.UserId
 
 	timeNow := time.Now()
 	detail.CreatedAt = &timeNow
+
+	// check requesting data is whether child or parent
+	if detail.ParentId != nil && *detail.Type == "EXTRA" {
+
+		// Get the maximum index of existing menu items with the same parent
+		rows, err := r.QueryContext(ctx, "SELECT COALESCE(MAX(index), 0) FROM menu WHERE parent_id = ? AND deleted_at IS NULL", detail.ParentId)
+		if err != nil {
+			return CreateMenuResponse{}, &pkg.Error{
+				Err:    pkg.WrapError(err, "cannot query max index value"),
+				Status: http.StatusInternalServerError,
+			}
+		}
+		var maxPosition int
+		if rows.Next() {
+			if err := rows.Scan(&maxPosition); err != nil {
+				return CreateMenuResponse{}, &pkg.Error{
+					Err:    pkg.WrapError(err, "cannot scan max index value"),
+					Status: http.StatusInternalServerError,
+				}
+			}
+		}
+
+		if detail.Index == 1 {
+			// Update all existing indexes by incrementing them by 1
+			if _, err = r.NewUpdate().Table("menu").
+				Where("parent_id = ? AND index > 0 AND deleted_at IS NULL", detail.ParentId).
+				Set("index = index + 1").
+				Exec(ctx); err != nil {
+				return CreateMenuResponse{}, &pkg.Error{
+					Err:    pkg.WrapError(err, "cannot update index by incrementing by 1 [ detail.Index == 1 ]"),
+					Status: http.StatusInternalServerError,
+				}
+			}
+
+		} else if detail.Index <= maxPosition {
+			// if the given index is lower than the max index change all the menu items from given index
+			if _, err = r.NewUpdate().
+				Table("menu").
+				Where("(index >= ?) and (parent_id = ?) AND deleted_at IS NULL", detail.Index, *detail.ParentId).
+				Set("index = index + 1").
+				Exec(ctx); err != nil {
+				return CreateMenuResponse{}, &pkg.Error{
+					Err:    pkg.WrapError(err, "updating indexes of menu items with indexes [ detail.Index <= maxPosition ]"),
+					Status: http.StatusInternalServerError,
+				}
+			}
+
+		} else if detail.Index >= maxPosition {
+			// If the provided index is greater than the maximum index
+			// Update new menu index = maxPosition + 1
+			detail.Index = maxPosition + 1
+		}
+
+	} else if detail.ParentId == nil && *detail.Type == "MAIN" {
+
+		// Get the maximum index of the existing only parent menu items
+		rows, err := r.QueryContext(ctx, "SELECT COALESCE(MAX(index), 0) FROM menu WHERE parent_id IS NULL AND deleted_at IS NULL")
+		if err != nil {
+			return CreateMenuResponse{}, &pkg.Error{
+				Err:    pkg.WrapError(err, "cannot query max index value"),
+				Status: http.StatusInternalServerError,
+			}
+		}
+		var maxPosition int
+		if rows.Next() {
+			if err := rows.Scan(&maxPosition); err != nil {
+				return CreateMenuResponse{}, &pkg.Error{
+					Err:    pkg.WrapError(err, "cannot scan max index value"),
+					Status: http.StatusInternalServerError,
+				}
+			}
+		}
+
+		if detail.Index == 1 {
+			// Update all existing indexes by incrementing them by 1
+			if _, err = r.NewUpdate().Table("menu").
+				Where("parent_id IS NULL AND index > 0 AND deleted_at IS NULL").
+				Set("index = index + 1").
+				Exec(ctx); err != nil {
+				return CreateMenuResponse{}, &pkg.Error{
+					Err:    pkg.WrapError(err, "cannot update index by incrementing by 1 [ detail.Index == 1 ]"),
+					Status: http.StatusInternalServerError,
+				}
+			}
+
+		} else if detail.Index <= maxPosition {
+			// if the given index is lower than the max index change all the menu items from given index
+			if _, err = r.NewUpdate().
+				Table("menu").
+				Where("(index >= ?) and parent_id is null AND deleted_at IS NULL", detail.Index).
+				Set("index = index + 1").
+				Exec(ctx); err != nil {
+				return CreateMenuResponse{}, &pkg.Error{
+					Err:    pkg.WrapError(err, "updating indexes of menu items with indexes [ detail.Index <= maxPosition ]"),
+					Status: http.StatusInternalServerError,
+				}
+			}
+
+		} else if detail.Index >= maxPosition {
+			// If the provided index is greater than the maximum index
+			// Update new menu index = maxPosition + 1
+			detail.Index = maxPosition + 1
+		}
+
+	}
 
 	_, err := r.NewInsert().Model(&detail).Exec(ctx)
 
@@ -76,8 +182,9 @@ func (r Repository) MenuGetAll(ctx context.Context, filter Filter) ([]GetMenuLis
 			content,
 			status,
 			slug,
-			parent_id
-		FROM menu WHERE deleted_at IS NULL`)
+			parent_id,
+			index
+		FROM menu WHERE deleted_at IS NULL `)
 	where := ""
 
 	query += where
@@ -87,7 +194,7 @@ func (r Repository) MenuGetAll(ctx context.Context, filter Filter) ([]GetMenuLis
 	}
 
 	query += where
-
+	query += fmt.Sprintf(` ORDER BY index`)
 	if filter.Offset != nil {
 		query += fmt.Sprintf(" OFFSET  %d", *filter.Offset)
 	}
@@ -105,6 +212,7 @@ func (r Repository) MenuGetAll(ctx context.Context, filter Filter) ([]GetMenuLis
 	}
 
 	menuMap := make(map[string]*GetMenuListResponse)
+	// menuMap := []*GetMenuListResponse{}
 
 	for rows.Next() {
 		var detail GetMenuListResponse
@@ -116,6 +224,7 @@ func (r Repository) MenuGetAll(ctx context.Context, filter Filter) ([]GetMenuLis
 			&detail.Status,
 			&detail.Slug,
 			&detail.ParentId,
+			&detail.Index,
 		); err != nil {
 			return nil, 0, &pkg.Error{
 				Err:    pkg.WrapError(err, "selecting population request list"),
@@ -175,7 +284,7 @@ func (r Repository) MenuGetAll(ctx context.Context, filter Filter) ([]GetMenuLis
 		}
 	}
 
-	// Find the root-level menus
+	// Find the root-level menu
 	var rootMenus []GetMenuListResponse
 	for _, menu := range menuMap {
 		if menu.ParentId == nil {
@@ -281,5 +390,94 @@ func (r Repository) MenuDelete(ctx context.Context, id string) *pkg.Error {
 		}
 	}
 
+	return nil
+}
+
+func (r Repository) UpdateIndex(ctx context.Context, request UpdateMenuIndex) *pkg.Error {
+	var data UpdateMenuIndex
+
+	err := r.NewSelect().Model(&data).Where("id = ? AND deleted_at IS NULL", request.Id).Scan(ctx)
+	if err != nil {
+		return &pkg.Error{
+			Err:    pkg.WrapError(err, "selecting menu by id"),
+			Status: http.StatusInternalServerError,
+		}
+	}
+
+	// check requesting data is whether child or parent
+	oldIndex := data.Index
+
+	// Update the index based on the provided request
+	if oldIndex != request.Index {
+
+		if data.ParentId != nil {
+			if oldIndex < request.Index {
+				// Decrease the index of menu items between oldIndex and request.Index
+				_, err = r.NewUpdate().
+					Table("menu").
+					Where("(index > ?) AND (index <= ?) AND deleted_at IS NULL AND parent_id = ?", oldIndex, request.Index, data.ParentId).
+					Set("index = index - 1").
+					Exec(ctx)
+			} else {
+				// Increase the index of menu items between request.Index and oldIndex
+				_, err = r.NewUpdate().
+					Table("menu").
+					Where("(index >= ?) AND (index < ?) AND deleted_at IS NULL AND parent_id  = ?", request.Index, oldIndex, data.ParentId).
+					Set("index = index + 1").
+					Exec(ctx)
+			}
+
+			if err != nil {
+				return &pkg.Error{
+					Err:    pkg.WrapError(err, "updating menu indexes"),
+					Status: http.StatusInternalServerError,
+				}
+			}
+
+			// Update the index of the target menu item
+			data.Index = request.Index
+			_, err = r.NewUpdate().Model(&data).Where("id = ?", request.Id).Column("index").Exec(ctx)
+			if err != nil {
+				return &pkg.Error{
+					Err:    pkg.WrapError(err, "updating menu index"),
+					Status: http.StatusInternalServerError,
+				}
+			}
+
+		} else if data.ParentId == nil {
+			if oldIndex < request.Index {
+				// Decrease the index of menu items between oldIndex and request.Index
+				_, err = r.NewUpdate().
+					Table("menu").
+					Where("(index > ?) AND (index <= ?) AND deleted_at IS NULL AND parent_id IS NULL", oldIndex, request.Index).
+					Set("index = index - 1").
+					Exec(ctx)
+			} else {
+				// Increase the index of menu items between request.Index and oldIndex
+				_, err = r.NewUpdate().
+					Table("menu").
+					Where("(index >= ?) AND (index < ?) AND deleted_at IS NULL AND parent_id IS NULL", request.Index, oldIndex).
+					Set("index = index + 1").
+					Exec(ctx)
+			}
+
+			if err != nil {
+				return &pkg.Error{
+					Err:    pkg.WrapError(err, "updating menu indexes"),
+					Status: http.StatusInternalServerError,
+				}
+			}
+
+			// Update the index of the target menu item
+			data.Index = request.Index
+			_, err = r.NewUpdate().Model(&data).Where("id = ?", request.Id).Column("index").Exec(ctx)
+			if err != nil {
+				return &pkg.Error{
+					Err:    pkg.WrapError(err, "updating menu index"),
+					Status: http.StatusInternalServerError,
+				}
+			}
+		}
+	}
 	return nil
 }

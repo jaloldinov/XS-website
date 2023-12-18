@@ -24,6 +24,7 @@ type CreateMenuRequest struct {
 	Status    *bool              `json:"status" bun:"status"`
 	Slug      *string            `json:"slug" bun:"slug"`
 	Type      string             `json:"type" bun:"type"`
+	Index     int                `json:"index" bun:"index"`
 	CreatedAt time.Time          `json:"-" bun:"created_at"`
 	CreatedBy string             `json:"-" bun:"created_by"`
 	UpdatedAt *time.Time         `json:"-" bun:"updated_at"`
@@ -43,6 +44,7 @@ type CreateMenuResponse struct {
 	Status    *bool              `json:"status" bun:"status"`
 	Slug      *string            `json:"slug" bun:"slug"`
 	Type      *string            `json:"type" bun:"type"`
+	Index     int                `json:"index" bun:"index"`
 	CreatedBy string             `json:"-" bun:"created_by"`
 	CreatedAt *time.Time         `json:"-" bun:"created_at"`
 }
@@ -57,6 +59,7 @@ type GetMenuListResponse struct {
 	ContentLanguages []string               `json:"content_languages"`
 	Status           bool                   `json:"status"`
 	Slug             string                 `json:"slug"`
+	Index            int                    `json:"index" bun:"index"`
 	ParentId         *string                `json:"parent_id"`
 	Children         *[]GetMenuListResponse `json:"children"`
 }
@@ -70,4 +73,12 @@ type UpdateMenuRequest struct {
 	Status   *bool              `json:"status" bun:"status"`
 	Slug     *string            `json:"slug" bun:"slug"`
 	Type     *string            `json:"type" bun:"type"`
+}
+
+type UpdateMenuIndex struct {
+	bun.BaseModel `bun:"table:menu"`
+
+	Id       *string `json:"id" bun:"id"`
+	ParentId *string `json:"parent_id" bun:"parent_id"`
+	Index    int     `-:"index" bun:"index"`
 }

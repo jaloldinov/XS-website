@@ -44,3 +44,8 @@ type StatusOk struct {
 type StatusBadRequest struct {
 	Error string `json:"error"`
 }
+
+type CustomError struct {
+	Message string `json:"message"`
+	Status  int    `json:"status"`
+}

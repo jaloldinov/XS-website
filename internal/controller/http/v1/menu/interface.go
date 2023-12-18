@@ -12,4 +12,6 @@ type Menu interface {
 	MenuGetAll(ctx context.Context, filter menu.Filter) ([]menu.GetMenuListResponse, int, *pkg.Error)
 	MenuUpdate(ctx context.Context, data menu.UpdateMenuRequest) *pkg.Error
 	MenuDelete(ctx context.Context, id string) *pkg.Error
+
+	UpdateIndex(ctx context.Context, data menu.UpdateMenuIndex) *pkg.Error
 }

@@ -17,6 +17,7 @@ type Menu struct {
 	Status    *bool              `json:"status" bun:"status"`
 	Slug      *string            `json:"slug" bun:"slug"`
 	Type      *string            `json:"type" bun:"type"`
+	Index     int                `json:"index" bun:"index"`
 	CreatedAt time.Time          `json:"-" bun:"created_at"`
 	CreatedBy string             `json:"-" bun:"created_by"`
 	UpdatedAt *time.Time         `json:"-" bun:"updated_at"`
