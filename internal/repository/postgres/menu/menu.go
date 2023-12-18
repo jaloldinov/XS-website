@@ -369,9 +369,23 @@ func (r Repository) MenuDelete(ctx context.Context, id string) *pkg.Error {
 		return er
 	}
 
+	// Get the menu item to be deleted
+	var data UpdateMenuIndex
+	err := r.NewSelect().Model(&data).Where("id = ? AND deleted_at IS NULL", id).Scan(ctx)
+	if err != nil {
+		return &pkg.Error{
+			Err:    pkg.WrapError(err, "selecting menu by id"),
+			Status: http.StatusInternalServerError,
+		}
+	}
+
+	// Store the current index of the menu item
+	oldIndex := data.Index
+
+	// Delete the menu item
 	result, err := r.NewUpdate().
 		Table("menu").
-		Where("deleted_at is null AND id = ?", id).
+		Where("deleted_at IS NULL AND id = ?", id).
 		Set("deleted_at = ?, deleted_by = ?", time.Now(), dataCtx.UserId).
 		Exec(ctx)
 
@@ -387,6 +401,32 @@ func (r Repository) MenuDelete(ctx context.Context, id string) *pkg.Error {
 		return &pkg.Error{
 			Err:    errors.New("no matching ID found"),
 			Status: http.StatusNotFound,
+		}
+	}
+
+	// Update the indexes of other menu items if the deleted item had a parent
+	if data.ParentId != nil {
+		_, err := r.NewUpdate().
+			Table("menu").
+			Where("(index > ?) AND deleted_at IS NULL AND parent_id = ?", oldIndex, data.ParentId).
+			Set("index = index - 1").
+			Exec(ctx)
+		if err != nil {
+			return &pkg.Error{
+				Err:    pkg.WrapError(err, "updating menu indexes"),
+				Status: http.StatusInternalServerError,
+			}
+		}
+	} else if data.ParentId == nil {
+		_, err := r.NewUpdate().
+			Table("menu").
+			Where("(index > ?) AND deleted_at IS NULL AND parent_id is null", oldIndex).
+			Set("index = index - 1").Exec(ctx)
+		if err != nil {
+			return &pkg.Error{
+				Err:    pkg.WrapError(err, "updating menu indexes"),
+				Status: http.StatusInternalServerError,
+			}
 		}
 	}
 
